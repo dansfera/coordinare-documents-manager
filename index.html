@@ -856,6 +856,23 @@
         background: var(--teal-soft);
       }
 
+      .board-link {
+        display: inline;
+        padding: 0;
+        border: 0;
+        color: var(--teal);
+        background: transparent;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 700;
+        text-align: left;
+      }
+
+      .board-link:hover {
+        color: #0b625c;
+        text-decoration: underline;
+      }
+
       [hidden] {
         display: none !important;
       }
@@ -1755,15 +1772,6 @@
         els.boardList.innerHTML = boardMarkup;
         els.boardTabs.innerHTML = tabMarkup;
 
-        document.querySelectorAll("[data-board-id]").forEach((button) => {
-          button.addEventListener("click", () => {
-            workspace.activeBoardId = button.dataset.boardId;
-            saveWorkspace();
-            activeView = "documents";
-            render();
-          });
-        });
-
         const board = activeBoard();
         const badge = board.scope === "site" ? "General" : "Study";
         const cls = board.scope === "site" ? "site" : "study";
@@ -1841,7 +1849,7 @@
                   </div>
                 </td>
                 <td>
-                  ${escapeHtml(board.name)}
+                  <button class="board-link" data-board-id="${escapeHtml(board.id)}" type="button">${escapeHtml(board.name)}</button>
                   <div class="hint">${escapeHtml(board.scope === "study" ? board.study || "Study board" : "Site-wide")}</div>
                 </td>
                 <td>${escapeHtml(document.owner || "Unassigned")}</td>
@@ -1996,6 +2004,19 @@
         document.getElementById("document-notes-input").value = doc?.notes || "";
         document.getElementById("document-file-input").value = "";
         openModal("document-modal");
+      }
+
+      function activateBoard(boardId) {
+        if (!workspace.boards.some((board) => board.id === boardId)) {
+          setLog("That board is no longer available.");
+          return;
+        }
+        const board = boardById(boardId);
+        workspace.activeBoardId = boardId;
+        saveWorkspace();
+        activeView = "documents";
+        render();
+        setLog(`Showing ${board.name}.`);
       }
 
       function fillBoardSelect(select, selectedBoardId) {
@@ -2470,6 +2491,15 @@
         document.querySelectorAll(".modal-overlay").forEach((overlay) => {
           overlay.addEventListener("click", (event) => {
             if (event.target === overlay) closeModal(overlay.id);
+          });
+        });
+
+        [els.boardList, els.boardTabs, els.documentRows].forEach((container) => {
+          container.addEventListener("click", (event) => {
+            if (!(event.target instanceof Element)) return;
+            const button = event.target.closest("[data-board-id]");
+            if (!button || !container.contains(button)) return;
+            activateBoard(button.dataset.boardId);
           });
         });
 
