@@ -26,4 +26,8 @@ Please keep this as a routing-only change:
 
 The standalone tool now uses the Coordinare CTMS auth flow for login. It supports a permanent General board for site-specific documents, study-specific boards, document creation/editing, task follow-up, JSON/CSV manifest import, CSV/JSON exports, and ZIP exports with originals when local attachments or `fileUrl` values are available.
 
+## Auth Model
+
+The current standalone Documents Manager has no backend session of its own. The `?ctms=connected` URL flag and `coordinare.documents.ctmsSession` localStorage value are display-only client-side markers and must never be treated as access control. Any future backend sync must re-authenticate against CTMS server-side and must not trust either the URL flag or localStorage marker.
+
 Thanks.

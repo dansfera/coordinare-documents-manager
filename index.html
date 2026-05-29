@@ -8,8 +8,9 @@
       name="description"
       content="Create document boards, track regulatory documents and tasks, and export Coordinare document inventory packages."
     />
-    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <link rel="icon" href="data:," />
+    <script src="vendor/lucide-0.468.0.min.js"></script>
+    <script src="vendor/jszip-3.10.1.min.js"></script>
     <style>
       :root {
         color-scheme: light;
@@ -1938,7 +1939,9 @@
 
         document.querySelectorAll("[data-delete-task]").forEach((button) => {
           button.addEventListener("click", () => {
-            workspace.tasks = workspace.tasks.filter((task) => task.id !== button.dataset.deleteTask);
+            const task = workspace.tasks.find((item) => item.id === button.dataset.deleteTask);
+            if (!task || !window.confirm(`Delete "${task.title}"?`)) return;
+            workspace.tasks = workspace.tasks.filter((item) => item.id !== button.dataset.deleteTask);
             saveWorkspace();
             render();
             setLog("Task deleted.");
@@ -2428,7 +2431,8 @@
       }
 
       function loadExample() {
-        if (workspace.documents.length && !window.confirm("Replace the current local workspace with example data?")) return;
+        const hasUserData = workspace.documents.length || workspace.tasks.length || workspace.boards.length > 1;
+        if (hasUserData && !window.confirm("Replace the current local workspace with example data?")) return;
         workspace = structuredClone(exampleWorkspace);
         saveWorkspace();
         activeView = "documents";
@@ -2442,6 +2446,9 @@
         window.location.assign(CTMS_AUTH_BRIDGE_URL);
       }
 
+      // Display-only CTMS session marker. This local-only app has no backend
+      // session and this value must never be used as access control. Any future
+      // backend sync must re-authenticate the user against CTMS server-side.
       function saveCtmsSession(payload) {
         localStorage.setItem(LOGIN_KEY, JSON.stringify(payload));
         closeModal("login-modal");
@@ -2455,6 +2462,9 @@
         saveCtmsSession(event.data);
       }
 
+      // Display-only return flag. Anyone can forge ?ctms=connected locally, so
+      // this must only change the UI label. Never trust it for backend access;
+      // future server sync must validate the CTMS session server-side.
       function handleCtmsReturn() {
         const params = new URLSearchParams(window.location.search);
         if (params.get("ctms") !== "connected") return;
