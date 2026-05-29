@@ -24,10 +24,12 @@ Please keep this as a routing-only change:
 - No migration
 - No modification to R2/Neon data
 
-The standalone tool now uses the Coordinare CTMS auth flow for login. It supports a permanent General board for site-specific documents, study-specific boards, document creation/editing, task follow-up, JSON/CSV manifest import, CSV/JSON exports, and ZIP exports with originals when local attachments or `fileUrl` values are available.
+The standalone tool now requires a verified Coordinare CTMS session before users can create boards, add/edit/delete documents, create tasks, import manifests, load example data, or export packages. It supports a permanent General board for site-specific documents, study-specific boards, document creation/editing, task follow-up, JSON/CSV manifest import, CSV/JSON exports, and ZIP exports with originals when local attachments or `fileUrl` values are available.
 
 ## Auth Model
 
-The current standalone Documents Manager has no backend session of its own. The `?ctms=connected` URL flag and `coordinare.documents.ctmsSession` localStorage value are display-only client-side markers and must never be treated as access control. Any future backend sync must re-authenticate against CTMS server-side and must not trust either the URL flag or localStorage marker.
+The current standalone Documents Manager has no backend document store of its own. CTMS authentication is verified by calling `https://ctms.coordinare.co/api/document-manager/session` with browser credentials; unauthenticated browsers receive `401` and all mutating document controls remain disabled. The `?ctms=connected` URL flag and `coordinare.documents.ctmsSession` localStorage value are display-only client-side markers and must never be treated as access control. Any future backend sync must re-authenticate against CTMS server-side and must not trust either the URL flag or localStorage marker.
+
+Authenticated usage events are sent to `https://ctms.coordinare.co/api/document-manager/events` and summarized for the DSCS admin at `/admin/documents`. These events contain product usage counts and event metadata only; they do not upload document files or turn browser-local document records into the regulated source of truth.
 
 Thanks.
