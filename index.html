@@ -931,11 +931,11 @@
         </div>
 
         <section class="workspace-card" aria-label="Workspace">
-          <span>Workspace</span>
-          <strong id="workspace-name">Not signed in</strong>
+          <span>CTMS session</span>
+          <strong id="workspace-name">Not connected</strong>
           <button class="button ghost" id="login-button" type="button">
             <i data-lucide="log-in"></i>
-            <span>Login</span>
+            <span>Login with CTMS</span>
           </button>
         </section>
 
@@ -965,9 +965,8 @@
         </section>
 
         <div class="side-note">
-          This standalone version is a local workspace. It can be used today for boards, tasks,
-          attachments, and exports, but it does not write back to Polsia or Coordinare until a
-          backend connection is added.
+          Login is handled by the Coordinare CTMS Supabase auth flow. Documents Manager keeps
+          boards, tasks, attachments, and exports in this browser until a CTMS backend sync is added.
         </div>
       </aside>
 
@@ -983,7 +982,7 @@
           <div class="actions">
             <button class="button secondary" id="coordinare-login-button" type="button">
               <i data-lucide="external-link"></i>
-              <span>Coordinare Login</span>
+              <span>CTMS Login</span>
             </button>
             <button class="button secondary" id="new-board-button" type="button">
               <i data-lucide="layout-dashboard"></i>
@@ -1200,42 +1199,34 @@
           </div>
         </section>
 
-        <div class="log" id="log" role="status">Ready. Create a board or sign in to name this local workspace.</div>
+        <div class="log" id="log" role="status">Ready. Login uses the Coordinare CTMS auth flow.</div>
       </section>
     </main>
 
     <div class="modal-overlay" id="login-modal">
       <section class="modal small" role="dialog" aria-modal="true" aria-labelledby="login-title">
         <header class="modal-header">
-          <h2 id="login-title">Login to Workspace</h2>
+          <h2 id="login-title">Login with Coordinare CTMS</h2>
           <button class="icon-button" data-close-modal="login-modal" title="Close" type="button">
             <i data-lucide="x"></i>
           </button>
         </header>
         <div class="modal-body">
           <p class="subtitle">
-            This standalone GitHub Pages tool cannot authenticate against Polsia by itself. This
-            login names a local workspace so a user can work today; the Coordinare login button opens
-            the production login separately.
+            Documents Manager uses the same CTMS login you use for Coordinare: Google sign-in,
+            magic link, and one-time code fallback. Sign in opens the CTMS auth page, confirms your
+            session there, then returns you here.
           </p>
           <div class="error" id="login-error"></div>
-          <div class="form-group">
-            <label for="login-name">Name</label>
-            <input id="login-name" placeholder="e.g., Dan Sfera" />
-          </div>
-          <div class="form-group">
-            <label for="login-site">Site or organization</label>
-            <input id="login-site" placeholder="e.g., Coordinare Research" />
+          <div class="onboarding-card lead">
+            <strong>Coordinare CTMS</strong>
+            <span>Use Google or email magic link on the CTMS login page. No password or fake local account is created here.</span>
           </div>
         </div>
         <footer class="modal-footer">
-          <button class="button secondary" id="open-coordinare-login" type="button">
+          <button class="button primary" id="open-coordinare-login" type="button">
             <i data-lucide="external-link"></i>
-            <span>Production Login</span>
-          </button>
-          <button class="button primary" id="save-login" type="button">
-            <i data-lucide="check"></i>
-            <span>Save Login</span>
+            <span>Continue with CTMS</span>
           </button>
         </footer>
       </section>
@@ -1399,8 +1390,9 @@
 
     <script>
       const STORAGE_KEY = "coordinare.documents.workspace.v2";
-      const LOGIN_KEY = "coordinare.documents.localLogin";
-      const COORDINARE_LOGIN_URL = "https://coordinare.co/login?returnTo=/documents";
+      const LOGIN_KEY = "coordinare.documents.ctmsSession";
+      const CTMS_ORIGIN = "https://ctms.coordinare.co";
+      const CTMS_AUTH_BRIDGE_URL = `${CTMS_ORIGIN}/auth/document-manager`;
 
       const defaultWorkspace = {
         boards: [
@@ -1668,16 +1660,22 @@
 
       function updateWorkspaceName() {
         const login = getLogin();
-        els.workspaceName.textContent = login ? `${login.name} - ${login.site}` : "Not signed in";
+        els.workspaceName.textContent = login ? login.label : "Not connected";
         els.loginButton.innerHTML = login
-          ? '<i data-lucide="user-check"></i><span>Workspace</span>'
-          : '<i data-lucide="log-in"></i><span>Login</span>';
+          ? '<i data-lucide="user-check"></i><span>CTMS Connected</span>'
+          : '<i data-lucide="log-in"></i><span>Login with CTMS</span>';
       }
 
       function getLogin() {
         try {
           const stored = localStorage.getItem(LOGIN_KEY);
-          return stored ? JSON.parse(stored) : null;
+          if (!stored) return null;
+          const session = JSON.parse(stored);
+          const user = session.user || {};
+          return {
+            ...session,
+            label: user.name || user.email || "CTMS user",
+          };
         } catch {
           return null;
         }
@@ -2093,7 +2091,7 @@
         document.getElementById("board-name-input").value = "";
         document.getElementById("board-scope-input").value = "study";
         document.getElementById("board-study-input").value = "";
-        document.getElementById("board-site-input").value = getLogin()?.site || "";
+        document.getElementById("board-site-input").value = "";
         document.getElementById("board-description-input").value = "";
         openModal("board-modal");
       }
@@ -2117,7 +2115,7 @@
           name,
           scope,
           study: scope === "study" ? study : "",
-          site: site || getLogin()?.site || "Site-wide",
+          site: site || "Site-wide",
           description: document.getElementById("board-description-input").value.trim(),
           permanent: false,
           createdAt: new Date().toISOString(),
@@ -2344,7 +2342,7 @@
       function normalizeImportRow(row, index) {
         const title = row.title || row.name || row.filename || row.file_name || `Imported document ${index + 1}`;
         const study = row.study || row.study_id || row.studyName || row.study_name || "";
-        const site = row.site || row.site_id || row.siteName || row.site_name || getLogin()?.site || "Imported";
+        const site = row.site || row.site_id || row.siteName || row.site_name || "Imported";
         const boardName = row.board || row.board_name || row.task_board || study || "General";
         const board = findOrCreateImportBoard(boardName, study, site);
         const fileUrl = row.fileUrl || row.file_url || row.url || row.download_url || row.signedUrl || row.signed_url || "";
@@ -2374,7 +2372,7 @@
           name: name || study || "Imported Board",
           scope: study ? "study" : "site",
           study: study || "",
-          site: site || getLogin()?.site || "Imported",
+          site: site || "Imported",
           description: study ? `Imported study board for ${study}.` : "Imported site-level board.",
           permanent: false,
           createdAt: new Date().toISOString(),
@@ -2417,25 +2415,32 @@
         setLog("Example Essential Doc Tracker-style workspace loaded.");
       }
 
-      function saveLogin() {
+      function connectCtmsAuth() {
         clearError("login-error");
-        const name = document.getElementById("login-name").value.trim();
-        const site = document.getElementById("login-site").value.trim();
-        if (!name || !site) {
-          showError("login-error", "Name and site are required.");
+        const popup = window.open(CTMS_AUTH_BRIDGE_URL, "coordinareCtmsLogin", "popup,width=520,height=760");
+        if (!popup) {
+          showError("login-error", "Popup blocked. Open the CTMS login page in a new tab instead.");
+          window.open(CTMS_AUTH_BRIDGE_URL, "_blank", "noopener");
           return;
         }
-        localStorage.setItem(LOGIN_KEY, JSON.stringify({ name, site, savedAt: new Date().toISOString() }));
+        setLog("Waiting for CTMS login confirmation...");
+      }
+
+      function saveCtmsSession(payload) {
+        localStorage.setItem(LOGIN_KEY, JSON.stringify(payload));
         closeModal("login-modal");
         render();
-        setLog(`Logged into local workspace as ${name}.`);
+        setLog(`Connected to CTMS as ${payload.user?.email || payload.user?.name || "authenticated user"}.`);
+      }
+
+      function handleAuthMessage(event) {
+        if (event.origin !== CTMS_ORIGIN) return;
+        if (!event.data || event.data.type !== "coordinare-ctms-auth" || !event.data.authenticated) return;
+        saveCtmsSession(event.data);
       }
 
       function resetLoginModal() {
         clearError("login-error");
-        const login = getLogin();
-        document.getElementById("login-name").value = login?.name || "";
-        document.getElementById("login-site").value = login?.site || "";
       }
 
       function bindEvents() {
@@ -2466,9 +2471,9 @@
           resetLoginModal();
           openModal("login-modal");
         });
-        els.coordinareLoginButton.addEventListener("click", () => window.open(COORDINARE_LOGIN_URL, "_blank", "noopener"));
-        els.openCoordinareLogin.addEventListener("click", () => window.open(COORDINARE_LOGIN_URL, "_blank", "noopener"));
-        document.getElementById("save-login").addEventListener("click", saveLogin);
+        els.coordinareLoginButton.addEventListener("click", connectCtmsAuth);
+        els.openCoordinareLogin.addEventListener("click", connectCtmsAuth);
+        window.addEventListener("message", handleAuthMessage);
 
         document.getElementById("new-board-button").addEventListener("click", openBoardModal);
         document.getElementById("sidebar-new-board").addEventListener("click", openBoardModal);

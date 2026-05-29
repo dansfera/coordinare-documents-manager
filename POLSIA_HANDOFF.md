@@ -24,6 +24,6 @@ Please keep this as a routing-only change:
 - No migration
 - No modification to R2/Neon data
 
-The standalone tool is now usable as a browser-local workspace. It supports local login, a permanent General board for site-specific documents, study-specific boards, document creation/editing, task follow-up, JSON/CSV manifest import, CSV/JSON exports, and ZIP exports with originals when local attachments or `fileUrl` values are available.
+The standalone tool now uses the Coordinare CTMS auth flow for login. It supports a permanent General board for site-specific documents, study-specific boards, document creation/editing, task follow-up, JSON/CSV manifest import, CSV/JSON exports, and ZIP exports with originals when local attachments or `fileUrl` values are available.
 
 Thanks.

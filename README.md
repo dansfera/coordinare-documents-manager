@@ -6,7 +6,7 @@ Hosted URL: https://documentmanager.coordinare.co/
 
 ## What It Does
 
-- Provides a local workspace login so a user can start working immediately.
+- Uses the Coordinare CTMS login flow through a CTMS auth bridge.
 - Creates a permanent General board for site-specific, non-study-specific documents.
 - Creates study-specific boards with study/site metadata.
 - Adds, edits, opens, and deletes documents with expiration dates, owners, notes, local attachments, or file URLs.
@@ -18,7 +18,7 @@ Hosted URL: https://documentmanager.coordinare.co/
 
 ## Why It Is Separate
 
-This is intentionally independent from the Coordinare CTMS app and from Polsia production internals. It is usable today as a browser-local workspace, but it does not write back to R2, Neon, Polsia, or Coordinare production. Polsia only needs to link to the hosted tool anywhere the app currently mentions or links to Documents or Document Manager.
+This is intentionally independent from Polsia production internals. It connects to the Coordinare CTMS auth flow for login, then stores document boards locally in the browser until a CTMS backend sync is added. Polsia only needs to link to the hosted tool anywhere the app currently mentions or links to Documents or Document Manager.
 
 ## Manifest Fields
 
