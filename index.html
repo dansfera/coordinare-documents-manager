@@ -983,8 +983,8 @@
         </section>
 
         <div class="side-note">
-          Login is handled by the Coordinare CTMS Supabase auth flow. Documents Manager keeps
-          boards, tasks, attachments, and exports in this browser until a CTMS backend sync is added.
+          Login is required through Coordinare CTMS before document work starts. Documents Manager
+          keeps boards, tasks, attachments, and exports in this browser until backend sync is added.
         </div>
       </aside>
 
@@ -1409,8 +1409,11 @@
     <script>
       const STORAGE_KEY = "coordinare.documents.workspace.v2";
       const LOGIN_KEY = "coordinare.documents.ctmsSession";
+      const TELEMETRY_SESSION_KEY = "coordinare.documents.telemetrySession";
       const CTMS_ORIGIN = "https://ctms.coordinare.co";
       const CTMS_AUTH_BRIDGE_URL = `${CTMS_ORIGIN}/auth/document-manager`;
+      const CTMS_SESSION_URL = `${CTMS_ORIGIN}/api/document-manager/session`;
+      const CTMS_TELEMETRY_URL = `${CTMS_ORIGIN}/api/document-manager/events`;
 
       const defaultWorkspace = {
         boards: [
@@ -1531,6 +1534,8 @@
 
       let workspace = loadWorkspace();
       let activeView = "documents";
+      let ctmsSession = null;
+      let authChecked = false;
       let filters = {
         query: "",
         status: "All",
@@ -1593,6 +1598,42 @@
 
       function id(prefix) {
         return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      }
+
+      function telemetrySessionId() {
+        try {
+          const existing = sessionStorage.getItem(TELEMETRY_SESSION_KEY);
+          if (existing) return existing;
+          const next = window.crypto?.randomUUID?.() || id("session");
+          sessionStorage.setItem(TELEMETRY_SESSION_KEY, next);
+          return next;
+        } catch {
+          return id("session");
+        }
+      }
+
+      function trackUsage(eventType, payload = {}) {
+        if (!getLogin()) return;
+        try {
+          fetch(CTMS_TELEMETRY_URL, {
+            method: "POST",
+            mode: "cors",
+            credentials: "include",
+            keepalive: true,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              eventType,
+              sessionId: telemetrySessionId(),
+              boardCount: workspace.boards.length,
+              documentCount: workspace.documents.length,
+              taskCount: workspace.tasks.length,
+              selectedCount: workspace.selectedDocumentIds.length,
+              payload,
+            }),
+          }).catch(() => {});
+        } catch {
+          // Telemetry is optional and must never block document work.
+        }
       }
 
       function escapeHtml(value) {
@@ -1678,23 +1719,82 @@
 
       function updateWorkspaceName() {
         const login = getLogin();
-        els.workspaceName.textContent = login ? login.label : "Not connected";
+        els.workspaceName.textContent = login ? login.label : authChecked ? "Not connected" : "Checking CTMS...";
         els.loginButton.innerHTML = login
           ? '<i data-lucide="user-check"></i><span>CTMS Connected</span>'
           : '<i data-lucide="log-in"></i><span>Login with CTMS</span>';
       }
 
       function getLogin() {
+        if (!ctmsSession?.authenticated) return null;
+        const user = ctmsSession.user || {};
+        return {
+          ...ctmsSession,
+          label: user.name || user.email || "CTMS user",
+        };
+      }
+
+      function authRequiredControls() {
+        return [
+          "sidebar-new-board",
+          "new-board-button",
+          "new-document-button",
+          "empty-add-document",
+          "new-task-button",
+          "task-export-button",
+          "import-button",
+          "template-button",
+          "demo-button",
+          "zip-button",
+          "csv-button",
+          "json-button",
+          "orphan-button",
+        ]
+          .map((idValue) => document.getElementById(idValue))
+          .filter(Boolean);
+      }
+
+      function updateAuthControls() {
+        const disabled = !getLogin();
+        authRequiredControls().forEach((control) => {
+          control.disabled = disabled;
+          control.title = disabled ? "Login with CTMS to use Documents Manager" : "";
+        });
+      }
+
+      function requireCtmsAuth() {
+        if (getLogin()) return true;
+        resetLoginModal();
+        showError("login-error", "Login with CTMS before creating, importing, uploading, or exporting documents.");
+        openModal("login-modal");
+        setLog("Login with CTMS is required before using Documents Manager.");
+        return false;
+      }
+
+      async function refreshCtmsSession(options = {}) {
         try {
-          const stored = localStorage.getItem(LOGIN_KEY);
-          if (!stored) return null;
-          const session = JSON.parse(stored);
-          const user = session.user || {};
-          return {
-            ...session,
-            label: user.name || user.email || "CTMS user",
-          };
+          const response = await fetch(CTMS_SESSION_URL, {
+            method: "GET",
+            mode: "cors",
+            credentials: "include",
+            cache: "no-store",
+          });
+          if (!response.ok) throw new Error("Not authenticated");
+          const data = await response.json();
+          if (!data.authenticated) throw new Error("Not authenticated");
+          ctmsSession = data;
+          localStorage.setItem(LOGIN_KEY, JSON.stringify(data));
+          authChecked = true;
+          render();
+          if (options.showLog) setLog(`Connected to CTMS as ${data.user?.email || data.user?.name || "authenticated user"}.`);
+          if (options.trackOpen) trackUsage("app.opened", { view: activeView });
+          return data;
         } catch {
+          ctmsSession = null;
+          localStorage.removeItem(LOGIN_KEY);
+          authChecked = true;
+          render();
+          if (options.showLog) setLog("CTMS login is required before using Documents Manager.");
           return null;
         }
       }
@@ -1725,6 +1825,7 @@
 
       function render() {
         updateWorkspaceName();
+        updateAuthControls();
         renderNav();
         renderBoards();
         renderMetrics();
@@ -1993,6 +2094,7 @@
       }
 
       function openDocumentModal(docId = "") {
+        if (!requireCtmsAuth()) return;
         clearError("document-error");
         const doc = workspace.documents.find((item) => item.id === docId);
         document.getElementById("document-modal-title").textContent = doc ? "Edit Document" : "Add Document";
@@ -2020,6 +2122,7 @@
         activeView = "documents";
         render();
         setLog(`Showing ${board.name}.`);
+        trackUsage("board.opened", { boardName: board.name, boardScope: board.scope });
       }
 
       function fillBoardSelect(select, selectedBoardId) {
@@ -2030,6 +2133,7 @@
       }
 
       async function saveDocumentFromModal() {
+        if (!requireCtmsAuth()) return;
         clearError("document-error");
         const editId = document.getElementById("document-id-input").value;
         const title = document.getElementById("document-title-input").value.trim();
@@ -2088,6 +2192,14 @@
         closeModal("document-modal");
         render();
         setLog(existing ? "Document updated." : "Document added.");
+        trackUsage(existing ? "document.updated" : "document.created", {
+          documentTitle: title,
+          boardName: boardById(boardId).name,
+          documentType: next.type,
+          source: next.source,
+          hasFile: Boolean(next.fileData),
+          hasUrl: Boolean(next.fileUrl && !next.fileUrl.startsWith("data:")),
+        });
       }
 
       function readFileAsDataUrl(file) {
@@ -2100,6 +2212,7 @@
       }
 
       function deleteDocument(docId) {
+        if (!requireCtmsAuth()) return;
         const doc = workspace.documents.find((item) => item.id === docId);
         if (!doc) return;
         if (!window.confirm(`Delete "${doc.title}"?`)) return;
@@ -2108,9 +2221,14 @@
         saveWorkspace();
         render();
         setLog("Document deleted.");
+        trackUsage("document.deleted", {
+          documentTitle: doc.title,
+          boardName: boardById(doc.boardId).name,
+        });
       }
 
       function openBoardModal() {
+        if (!requireCtmsAuth()) return;
         clearError("board-error");
         document.getElementById("board-name-input").value = "";
         document.getElementById("board-scope-input").value = "study";
@@ -2121,6 +2239,7 @@
       }
 
       function saveBoardFromModal() {
+        if (!requireCtmsAuth()) return;
         clearError("board-error");
         const name = document.getElementById("board-name-input").value.trim();
         const scope = document.getElementById("board-scope-input").value;
@@ -2151,9 +2270,16 @@
         activeView = "documents";
         render();
         setLog(`Board "${board.name}" created.`);
+        trackUsage("board.created", {
+          boardName: board.name,
+          boardScope: board.scope,
+          studyId: board.study,
+          site: board.site,
+        });
       }
 
       function openTaskModal() {
+        if (!requireCtmsAuth()) return;
         clearError("task-error");
         document.getElementById("task-title-input").value = "";
         fillBoardSelect(document.getElementById("task-board-input"), workspace.activeBoardId);
@@ -2164,6 +2290,7 @@
       }
 
       function saveTaskFromModal() {
+        if (!requireCtmsAuth()) return;
         clearError("task-error");
         const title = document.getElementById("task-title-input").value.trim();
         if (!title) {
@@ -2185,6 +2312,10 @@
         activeView = "tasks";
         render();
         setLog("Task created.");
+        trackUsage("task.created", {
+          taskTitle: title,
+          boardName: boardById(document.getElementById("task-board-input").value).name,
+        });
       }
 
       function documentRowsForExport(rows = selectedRows()) {
@@ -2269,6 +2400,7 @@
       }
 
       async function exportZip() {
+        if (!requireCtmsAuth()) return;
         const selected = selectedRows();
         if (!selected.length) {
           setLog("Select at least one document before creating a ZIP export.");
@@ -2304,6 +2436,12 @@
         const blob = await zip.generateAsync({ type: "blob" });
         downloadBlob(`coordinare-document-export-${new Date().toISOString().slice(0, 10)}.zip`, blob);
         setLog("ZIP export created.");
+        trackUsage("export.zip", {
+          exportType: "zip",
+          selectedDocuments: selected.length,
+          originalsAvailable: selected.filter(isReady).length,
+          originalsMissing: selected.filter((doc) => !isReady(doc)).length,
+        });
       }
 
       function safeFilename(value) {
@@ -2411,6 +2549,7 @@
       }
 
       async function importManifest(file) {
+        if (!requireCtmsAuth()) return;
         try {
           const text = await file.text();
           const rows = parseManifest(text, file.name).map(normalizeImportRow);
@@ -2423,6 +2562,10 @@
           activeView = "documents";
           render();
           setLog(`Imported ${deduped.length} document${deduped.length === 1 ? "" : "s"} from ${file.name}.`);
+          trackUsage("import.completed", {
+            fileName: file.name,
+            importedDocuments: deduped.length,
+          });
         } catch (error) {
           setLog(`Import failed: ${error.message}`);
         } finally {
@@ -2431,6 +2574,7 @@
       }
 
       function loadExample() {
+        if (!requireCtmsAuth()) return;
         const hasUserData = workspace.documents.length || workspace.tasks.length || workspace.boards.length > 1;
         if (hasUserData && !window.confirm("Replace the current local workspace with example data?")) return;
         workspace = structuredClone(exampleWorkspace);
@@ -2438,6 +2582,7 @@
         activeView = "documents";
         render();
         setLog("Example Essential Doc Tracker-style workspace loaded.");
+        trackUsage("example.loaded", { boardCount: workspace.boards.length, documentCount: workspace.documents.length });
       }
 
       function connectCtmsAuth() {
@@ -2454,32 +2599,30 @@
         closeModal("login-modal");
         render();
         setLog(`Connected to CTMS as ${payload.user?.email || payload.user?.name || "authenticated user"}.`);
+        trackUsage("auth.connected", { method: "ctms" });
       }
 
       function handleAuthMessage(event) {
         if (event.origin !== CTMS_ORIGIN) return;
         if (!event.data || event.data.type !== "coordinare-ctms-auth" || !event.data.authenticated) return;
-        saveCtmsSession(event.data);
+        refreshCtmsSession({ showLog: true, trackOpen: true });
       }
 
       // Display-only return flag. Anyone can forge ?ctms=connected locally, so
       // this must only change the UI label. Never trust it for backend access;
       // future server sync must validate the CTMS session server-side.
-      function handleCtmsReturn() {
+      async function handleCtmsReturn() {
         const params = new URLSearchParams(window.location.search);
         if (params.get("ctms") !== "connected") return;
-        if (!getLogin()) {
-          saveCtmsSession({
-            type: "coordinare-ctms-auth",
-            authenticated: true,
-            authenticatedAt: new Date().toISOString(),
-            user: { name: "CTMS user" },
-          });
-        }
         params.delete("ctms");
         const nextQuery = params.toString();
         const cleanUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash}`;
         window.history.replaceState({}, "", cleanUrl);
+        const session = await refreshCtmsSession({ showLog: true, trackOpen: true });
+        if (!session) {
+          showError("login-error", "CTMS could not verify your login. Please sign in again.");
+          openModal("login-modal");
+        }
       }
 
       function resetLoginModal() {
@@ -2491,6 +2634,7 @@
           button.addEventListener("click", () => {
             activeView = button.dataset.view;
             render();
+            trackUsage("view.opened", { view: activeView });
           });
         });
 
@@ -2538,8 +2682,10 @@
         document.getElementById("new-task-button").addEventListener("click", openTaskModal);
         document.getElementById("save-task").addEventListener("click", saveTaskFromModal);
         document.getElementById("task-export-button").addEventListener("click", () => {
+          if (!requireCtmsAuth()) return;
           downloadFile("coordinare-task-board-export.csv", toCsv(taskRowsForExport()), "text/csv");
           setLog("Task CSV exported.");
+          trackUsage("export.tasks_csv", { exportType: "tasks_csv", taskCount: workspace.tasks.length });
         });
 
         els.searchInput.addEventListener("input", () => {
@@ -2575,9 +2721,14 @@
 
         document.getElementById("import-button").addEventListener("click", () => els.manifestInput.click());
         els.manifestInput.addEventListener("change", () => {
+          if (!requireCtmsAuth()) {
+            els.manifestInput.value = "";
+            return;
+          }
           if (els.manifestInput.files[0]) importManifest(els.manifestInput.files[0]);
         });
         document.getElementById("template-button").addEventListener("click", () => {
+          if (!requireCtmsAuth()) return;
           const rows = [
             {
               title: "PI CV signed.pdf",
@@ -2594,27 +2745,36 @@
           ];
           downloadFile("coordinare-document-import-template.csv", toCsv(rows), "text/csv");
           setLog("Import template downloaded.");
+          trackUsage("template.downloaded", { exportType: "import_template" });
         });
         document.getElementById("demo-button").addEventListener("click", loadExample);
 
         document.getElementById("csv-button").addEventListener("click", () => {
+          if (!requireCtmsAuth()) return;
           downloadFile("coordinare-document-manifest.csv", toCsv(documentRowsForExport()), "text/csv");
           setLog("Document CSV exported.");
+          trackUsage("export.csv", { exportType: "manifest_csv", documentCount: workspace.documents.length });
         });
         document.getElementById("json-button").addEventListener("click", () => {
+          if (!requireCtmsAuth()) return;
           downloadFile("coordinare-workspace-export.json", JSON.stringify({ ...workspace, export_metadata: exportMetadata() }, null, 2), "application/json");
           setLog("Workspace JSON exported.");
+          trackUsage("export.json", { exportType: "workspace_json" });
         });
         document.getElementById("orphan-button").addEventListener("click", () => {
+          if (!requireCtmsAuth()) return;
           downloadFile("coordinare-orphan-report.json", JSON.stringify(orphanReport(), null, 2), "application/json");
           setLog("Orphan report exported.");
+          trackUsage("export.orphan_report", { exportType: "orphan_report" });
         });
         document.getElementById("zip-button").addEventListener("click", exportZip);
       }
 
+      const hasCtmsReturn = new URLSearchParams(window.location.search).get("ctms") === "connected";
       handleCtmsReturn();
       bindEvents();
       render();
+      if (!hasCtmsReturn) refreshCtmsSession({ trackOpen: true });
     </script>
   </body>
 </html>
