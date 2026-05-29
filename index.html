@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Coordinare Documents Manager</title>
+    <meta
+      name="description"
+      content="Create document boards, track regulatory documents and tasks, and export Coordinare document inventory packages."
+    />
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <style>
@@ -12,10 +16,27 @@
         font-family:
           Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
           sans-serif;
-        color: #18202f;
-        background: #f6f7f9;
+        color: #142033;
+        background: #f5f8f8;
         font-synthesis: none;
         text-rendering: optimizeLegibility;
+        --ink: #142033;
+        --muted: #627287;
+        --soft: #e5eeee;
+        --surface: #ffffff;
+        --panel: #f7fbfb;
+        --teal: #0f766e;
+        --teal-2: #0d9488;
+        --teal-soft: #ddf7f3;
+        --navy: #172235;
+        --blue: #2563eb;
+        --amber: #b45309;
+        --amber-soft: #fff4d8;
+        --red: #b42318;
+        --red-soft: #fee4e2;
+        --green: #067647;
+        --green-soft: #dcfae6;
+        --shadow: 0 18px 50px rgba(20, 32, 51, 0.12);
       }
 
       * {
@@ -26,6 +47,9 @@
         margin: 0;
         min-width: 320px;
         min-height: 100vh;
+        background:
+          linear-gradient(180deg, rgba(15, 118, 110, 0.08), transparent 280px),
+          var(--panel);
       }
 
       button,
@@ -35,37 +59,45 @@
         font: inherit;
       }
 
-      .shell {
+      button {
+        touch-action: manipulation;
+      }
+
+      .app {
         display: grid;
-        grid-template-columns: 248px minmax(0, 1fr);
+        grid-template-columns: 276px minmax(0, 1fr);
         min-height: 100vh;
       }
 
       .sidebar {
+        position: sticky;
+        top: 0;
         display: flex;
         flex-direction: column;
-        gap: 28px;
-        padding: 22px 18px;
-        color: #f8fafc;
-        background: #17202f;
+        gap: 20px;
+        height: 100vh;
+        padding: 20px 16px;
+        color: #e8edf4;
+        background: var(--navy);
+        overflow: auto;
       }
 
       .brand {
         display: flex;
         align-items: center;
         gap: 12px;
-        min-height: 44px;
+        min-height: 48px;
       }
 
       .brand-mark {
         display: grid;
-        width: 38px;
-        height: 38px;
+        width: 40px;
+        height: 40px;
         place-items: center;
         border-radius: 8px;
-        color: #142033;
+        color: #07332f;
         font-weight: 800;
-        background: #a7f3d0;
+        background: #9ee7dc;
       }
 
       .brand strong,
@@ -73,10 +105,33 @@
         display: block;
       }
 
+      .brand strong {
+        color: #ffffff;
+      }
+
       .brand span {
         margin-top: 2px;
-        color: #b9c3d1;
+        color: #aab7ca;
         font-size: 13px;
+      }
+
+      .workspace-card {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid #33445d;
+        border-radius: 8px;
+        background: #1f2c42;
+      }
+
+      .workspace-card span {
+        color: #adbacb;
+        font-size: 12px;
+      }
+
+      .workspace-card strong {
+        color: #ffffff;
+        font-size: 14px;
       }
 
       .nav {
@@ -86,7 +141,10 @@
 
       .nav-item,
       .button,
-      .icon-button {
+      .icon-button,
+      .chip-button,
+      .board-row,
+      .tab-button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -96,7 +154,8 @@
         transition:
           background 120ms ease,
           border-color 120ms ease,
-          color 120ms ease;
+          color 120ms ease,
+          transform 120ms ease;
       }
 
       .nav-item {
@@ -115,48 +174,108 @@
         background: #253247;
       }
 
-      .read-only {
+      .side-section {
+        display: grid;
+        gap: 8px;
+      }
+
+      .side-section-header {
         display: flex;
         align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding-inline: 2px;
+      }
+
+      .side-section-header span {
+        color: #9daabe;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+      }
+
+      .board-list {
+        display: grid;
+        gap: 5px;
+      }
+
+      .board-row {
+        justify-content: flex-start;
         gap: 10px;
+        min-height: 38px;
+        padding: 0 10px;
+        color: #d6deea;
+        background: transparent;
+      }
+
+      .board-row.active,
+      .board-row:hover {
+        color: #ffffff;
+        background: #253247;
+      }
+
+      .board-row svg {
+        flex: 0 0 auto;
+      }
+
+      .board-row span {
+        min-width: 0;
+        overflow: hidden;
+        text-align: left;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .side-note {
         margin-top: auto;
         padding: 12px;
         border: 1px solid #33445d;
         border-radius: 8px;
         color: #cbd5e1;
-        background: #1d293a;
+        background: #1f2c42;
+        font-size: 12px;
+        line-height: 1.45;
       }
 
-      .content {
+      .main {
         min-width: 0;
-        padding: 26px clamp(18px, 4vw, 42px);
+        padding: 26px clamp(18px, 4vw, 44px) 34px;
       }
 
       .topbar {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
-        gap: 20px;
-        margin-bottom: 22px;
+        gap: 18px;
+        margin-bottom: 18px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
       }
 
       h1 {
-        margin: 0;
-        color: #121826;
-        font-size: 30px;
-        line-height: 1.15;
+        color: #111827;
+        font-size: clamp(24px, 3vw, 34px);
+        line-height: 1.12;
         letter-spacing: 0;
       }
 
-      p {
-        margin: 7px 0 0;
-        color: #5f6c7e;
+      .subtitle {
+        max-width: 820px;
+        margin-top: 7px;
+        color: var(--muted);
+        font-size: 14px;
       }
 
       .actions {
         display: flex;
-        gap: 8px;
         flex-wrap: wrap;
+        gap: 8px;
         justify-content: flex-end;
       }
 
@@ -169,25 +288,78 @@
 
       .button.primary {
         color: #ffffff;
-        background: #0f766e;
+        background: var(--teal);
+      }
+
+      .button.primary:hover {
+        background: #0b625c;
       }
 
       .button.secondary {
         color: #243044;
-        border: 1px solid #d9dee7;
+        border: 1px solid #d7e0e8;
         background: #ffffff;
       }
 
-      .button.warning {
-        color: #6f3b00;
-        border: 1px solid #f6d59b;
-        background: #fff7e8;
+      .button.secondary:hover {
+        background: #f3f7f7;
+      }
+
+      .button.danger {
+        color: var(--red);
+        border: 1px solid #f4b8b2;
+        background: #fff7f6;
+      }
+
+      .button.ghost {
+        color: #e8edf4;
+        border: 1px solid #41536d;
+        background: transparent;
       }
 
       .button:disabled,
       .icon-button:disabled {
         cursor: not-allowed;
         opacity: 0.48;
+      }
+
+      .onboarding {
+        display: grid;
+        grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(160px, 0.8fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .onboarding-card,
+      .metric,
+      .panel,
+      .empty-state {
+        border: 1px solid #dde7e7;
+        border-radius: 8px;
+        background: #ffffff;
+      }
+
+      .onboarding-card {
+        display: grid;
+        gap: 8px;
+        min-height: 118px;
+        padding: 15px;
+      }
+
+      .onboarding-card.lead {
+        background: #f2fbfa;
+      }
+
+      .onboarding-card strong {
+        color: var(--ink);
+        font-size: 14px;
+      }
+
+      .onboarding-card span,
+      .onboarding-card p {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
       }
 
       .metrics {
@@ -199,18 +371,15 @@
 
       .metric {
         display: grid;
-        grid-template-columns: 24px 1fr;
+        grid-template-columns: 26px minmax(0, 1fr);
         gap: 4px 10px;
-        min-height: 84px;
-        padding: 16px;
-        border: 1px solid #e1e6ee;
-        border-radius: 8px;
-        background: #ffffff;
+        min-height: 82px;
+        padding: 15px;
       }
 
       .metric svg {
         grid-row: span 2;
-        color: #0f766e;
+        color: var(--teal);
       }
 
       .metric strong {
@@ -225,64 +394,22 @@
         font-size: 13px;
       }
 
-      .toolbar {
+      .board-toolbar {
         display: grid;
-        grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(128px, 170px)) 40px;
+        grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(130px, 174px));
         gap: 10px;
         align-items: center;
         margin-bottom: 14px;
       }
 
-      .import-panel {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 14px;
-        align-items: center;
-        margin-bottom: 16px;
-        padding: 14px 16px;
-        border: 1px solid #dce5ef;
-        border-radius: 8px;
-        background: #ffffff;
-      }
-
-      .import-panel strong,
-      .import-panel span {
-        display: block;
-      }
-
-      .import-panel strong {
-        color: #17202f;
-      }
-
-      .import-panel span {
-        margin-top: 3px;
-        color: #69768a;
-        font-size: 13px;
-      }
-
-      .import-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        justify-content: flex-end;
-      }
-
-      .file-input {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-      }
-
       .search,
-      .select {
+      .select,
+      .field-shell {
         position: relative;
         display: flex;
         align-items: center;
         min-height: 40px;
-        border: 1px solid #d9dee7;
+        border: 1px solid #d7e0e8;
         border-radius: 8px;
         background: #ffffff;
       }
@@ -299,7 +426,8 @@
       }
 
       .search input,
-      .select select {
+      .select select,
+      .field-shell input {
         width: 100%;
         min-width: 0;
         border: 0;
@@ -320,7 +448,7 @@
 
       .select select {
         appearance: none;
-        padding-right: 18px;
+        padding-right: 20px;
       }
 
       .select svg {
@@ -329,24 +457,76 @@
         pointer-events: none;
       }
 
-      .icon-button {
-        width: 38px;
-        height: 38px;
-        color: #263247;
-        border: 1px solid #d9dee7;
-        background: #ffffff;
+      .board-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 12px;
       }
 
-      .table-wrap {
+      .board-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #111827;
+        font-size: 20px;
+      }
+
+      .badge,
+      .status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 24px;
+        padding: 0 9px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .badge {
+        color: #0b625c;
+        background: var(--teal-soft);
+      }
+
+      .badge.study {
+        color: #1d4ed8;
+        background: #dbeafe;
+      }
+
+      .badge.site {
+        color: #854d0e;
+        background: #fef3c7;
+      }
+
+      .status.good {
+        color: var(--green);
+        background: var(--green-soft);
+      }
+
+      .status.warning {
+        color: var(--amber);
+        background: var(--amber-soft);
+      }
+
+      .status.bad {
+        color: var(--red);
+        background: var(--red-soft);
+      }
+
+      .panel {
+        overflow: hidden;
+      }
+
+      .table-scroll {
         overflow: auto;
-        border: 1px solid #e1e6ee;
-        border-radius: 8px;
-        background: #ffffff;
       }
 
       table {
         width: 100%;
-        min-width: 920px;
+        min-width: 980px;
         border-collapse: collapse;
       }
 
@@ -354,15 +534,16 @@
       td {
         padding: 12px 14px;
         text-align: left;
-        border-bottom: 1px solid #edf0f4;
+        border-bottom: 1px solid #edf1f2;
+        vertical-align: top;
       }
 
       th {
         color: #667386;
         font-size: 12px;
-        font-weight: 700;
+        font-weight: 800;
         text-transform: uppercase;
-        background: #fafbfc;
+        background: #fafcfc;
       }
 
       tbody tr:hover {
@@ -377,21 +558,23 @@
         width: 44px;
       }
 
-      .check-cell input {
+      .check-cell input,
+      input[type="checkbox"] {
         width: 16px;
         height: 16px;
-        accent-color: #0f766e;
+        accent-color: var(--teal);
       }
 
       .file-title {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 10px;
-        min-width: 260px;
+        min-width: 250px;
       }
 
       .file-title svg {
-        color: #2563eb;
+        margin-top: 2px;
+        color: var(--blue);
         flex: 0 0 auto;
       }
 
@@ -401,7 +584,7 @@
       }
 
       .file-title strong {
-        max-width: 360px;
+        max-width: 390px;
         overflow: hidden;
         color: #18202f;
         text-overflow: ellipsis;
@@ -414,90 +597,292 @@
         font-size: 12px;
       }
 
-      .status {
-        display: inline-flex;
-        align-items: center;
-        min-height: 24px;
-        padding: 0 9px;
-        border-radius: 999px;
-        font-size: 12px;
-        font-weight: 700;
-      }
-
-      .status.ready {
-        color: #0b5e4f;
-        background: #dff8ee;
-      }
-
-      .status.missing {
-        color: #7a4b00;
-        background: #fff0c2;
-      }
-
       .row-actions {
-        width: 58px;
+        display: flex;
+        gap: 6px;
+        justify-content: flex-end;
+      }
+
+      .icon-button {
+        width: 36px;
+        height: 36px;
+        color: #263247;
+        border: 1px solid #d7e0e8;
+        background: #ffffff;
+      }
+
+      .icon-button:hover {
+        background: #f2f6f6;
+      }
+
+      .empty-state {
+        display: grid;
+        justify-items: center;
+        gap: 10px;
+        padding: 46px 22px;
+        text-align: center;
+      }
+
+      .empty-state svg {
+        color: var(--teal);
+      }
+
+      .empty-state h3 {
+        color: #111827;
+        font-size: 18px;
+      }
+
+      .empty-state p {
+        max-width: 520px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .view {
+        display: none;
+      }
+
+      .view.active {
+        display: block;
+      }
+
+      .task-grid,
+      .export-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 14px;
+      }
+
+      .task-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .task-card {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: start;
+        padding: 14px;
+        border: 1px solid #dde7e7;
+        border-radius: 8px;
+        background: #ffffff;
+      }
+
+      .task-card.done {
+        opacity: 0.68;
+      }
+
+      .task-card strong,
+      .task-card span {
+        display: block;
+      }
+
+      .task-card span {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .export-card {
+        display: grid;
+        gap: 12px;
+        padding: 16px;
+      }
+
+      .export-list {
+        display: grid;
+        gap: 9px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .export-list div {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
       }
 
       .log {
         min-height: 42px;
         margin-top: 14px;
         padding: 11px 13px;
-        border: 1px solid #dce5ef;
+        border: 1px solid #d7e0e8;
         border-radius: 8px;
         color: #3b4658;
         background: #ffffff;
         font-size: 13px;
       }
 
-      @media (max-width: 920px) {
-        .shell {
+      .file-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+      }
+
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        background: rgba(15, 23, 42, 0.5);
+      }
+
+      .modal-overlay.open {
+        display: flex;
+      }
+
+      .modal {
+        width: min(760px, 100%);
+        max-height: min(860px, calc(100vh - 36px));
+        overflow: auto;
+        border-radius: 10px;
+        background: #ffffff;
+        box-shadow: var(--shadow);
+      }
+
+      .modal.small {
+        width: min(520px, 100%);
+      }
+
+      .modal-header,
+      .modal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 18px;
+        border-bottom: 1px solid #e4ecec;
+      }
+
+      .modal-footer {
+        justify-content: flex-end;
+        border-top: 1px solid #e4ecec;
+        border-bottom: 0;
+      }
+
+      .modal-header h2 {
+        color: #111827;
+        font-size: 18px;
+      }
+
+      .modal-body {
+        display: grid;
+        gap: 14px;
+        padding: 18px;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .form-group {
+        display: grid;
+        gap: 6px;
+      }
+
+      .form-group.full {
+        grid-column: 1 / -1;
+      }
+
+      .form-group label {
+        color: #374151;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        width: 100%;
+        min-height: 40px;
+        border: 1px solid #d7e0e8;
+        border-radius: 8px;
+        padding: 9px 10px;
+        outline: 0;
+        color: #1f2937;
+        background: #ffffff;
+      }
+
+      .form-group textarea {
+        min-height: 84px;
+        resize: vertical;
+      }
+
+      .hint {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .error {
+        display: none;
+        padding: 10px 12px;
+        border: 1px solid #f4b8b2;
+        border-radius: 8px;
+        color: var(--red);
+        background: #fff7f6;
+        font-size: 13px;
+      }
+
+      .tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+
+      .tab-button {
+        gap: 7px;
+        min-height: 34px;
+        padding: 0 11px;
+        color: #3b4658;
+        border: 1px solid #d7e0e8;
+        background: #ffffff;
+      }
+
+      .tab-button.active,
+      .tab-button:hover {
+        color: #07332f;
+        border-color: #9ee7dc;
+        background: var(--teal-soft);
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      @media (max-width: 1080px) {
+        .app {
           grid-template-columns: 1fr;
         }
 
         .sidebar {
-          position: sticky;
-          top: 0;
-          z-index: 2;
-          display: grid;
-          grid-template-columns: 1fr auto;
-          gap: 12px;
-          padding: 12px 14px;
+          position: static;
+          height: auto;
         }
 
-        .nav {
-          grid-column: 1 / -1;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-
-        .read-only {
+        .side-note {
           display: none;
         }
 
-        .topbar {
-          align-items: flex-start;
-          flex-direction: column;
-        }
-
-        .actions {
-          width: 100%;
-          justify-content: flex-start;
-        }
-
-        .metrics {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .toolbar {
+        .onboarding,
+        .metrics,
+        .task-grid,
+        .export-grid {
           grid-template-columns: 1fr 1fr;
         }
 
-        .import-panel {
-          align-items: flex-start;
-          grid-template-columns: 1fr;
-        }
-
-        .import-actions {
-          justify-content: flex-start;
+        .board-toolbar {
+          grid-template-columns: 1fr 1fr;
         }
 
         .search {
@@ -505,32 +890,37 @@
         }
       }
 
-      @media (max-width: 560px) {
-        .content {
+      @media (max-width: 680px) {
+        .main {
           padding-inline: 12px;
         }
 
-        .nav-item span {
-          display: none;
+        .topbar,
+        .board-header {
+          flex-direction: column;
         }
 
-        .nav-item {
-          justify-content: center;
+        .actions {
+          justify-content: flex-start;
         }
 
+        .onboarding,
         .metrics,
-        .toolbar {
+        .board-toolbar,
+        .task-grid,
+        .export-grid,
+        .form-grid {
           grid-template-columns: 1fr;
         }
 
-        .icon-button {
+        .button {
           width: 100%;
         }
       }
     </style>
   </head>
   <body>
-    <main class="shell">
+    <main class="app">
       <aside class="sidebar" aria-label="Documents Manager navigation">
         <div class="brand">
           <div class="brand-mark">C</div>
@@ -539,358 +929,725 @@
             <span>Documents Manager</span>
           </div>
         </div>
-        <nav class="nav">
-          <button class="nav-item active" title="Document inventory">
-            <i data-lucide="folder-open"></i>
-            <span>Inventory</span>
+
+        <section class="workspace-card" aria-label="Workspace">
+          <span>Workspace</span>
+          <strong id="workspace-name">Not signed in</strong>
+          <button class="button ghost" id="login-button" type="button">
+            <i data-lucide="log-in"></i>
+            <span>Login</span>
           </button>
-          <button class="nav-item" title="Task attachments">
+        </section>
+
+        <nav class="nav" aria-label="Primary views">
+          <button class="nav-item active" data-view="documents" title="Document boards" type="button">
+            <i data-lucide="folder-open"></i>
+            <span>Documents</span>
+          </button>
+          <button class="nav-item" data-view="tasks" title="Task checklist" type="button">
             <i data-lucide="clipboard-list"></i>
             <span>Tasks</span>
           </button>
-          <button class="nav-item" title="Export package">
+          <button class="nav-item" data-view="export" title="Export package" type="button">
             <i data-lucide="file-archive"></i>
             <span>Export</span>
           </button>
         </nav>
-        <div class="read-only">
-          <i data-lucide="shield-check"></i>
-          <span>Read-only page</span>
+
+        <section class="side-section" aria-label="Boards">
+          <div class="side-section-header">
+            <span>Boards</span>
+            <button class="icon-button" id="sidebar-new-board" title="New board" type="button">
+              <i data-lucide="plus"></i>
+            </button>
+          </div>
+          <div class="board-list" id="board-list"></div>
+        </section>
+
+        <div class="side-note">
+          This standalone version is a local workspace. It can be used today for boards, tasks,
+          attachments, and exports, but it does not write back to Polsia or Coordinare until a
+          backend connection is added.
         </div>
       </aside>
 
-      <section class="content">
+      <section class="main">
         <header class="topbar">
           <div>
             <h1>Documents Manager</h1>
-            <p><span id="total-count">0</span> files across Document Manager and Task Board</p>
+            <p class="subtitle">
+              Track General site documents and study-specific boards, attach files or URLs, manage
+              follow-up tasks, and export a migration-ready package.
+            </p>
           </div>
           <div class="actions">
-            <label class="button secondary" for="manifest-input">
-              <i data-lucide="upload"></i>
-              <span>Import</span>
-            </label>
-            <input class="file-input" id="manifest-input" type="file" accept=".json,.csv,application/json,text/csv" />
-            <button class="button secondary" id="csv-button">
-              <i data-lucide="table-properties"></i>
-              <span>CSV</span>
+            <button class="button secondary" id="coordinare-login-button" type="button">
+              <i data-lucide="external-link"></i>
+              <span>Coordinare Login</span>
             </button>
-            <button class="button secondary" id="json-button">
-              <i data-lucide="database"></i>
-              <span>JSON</span>
+            <button class="button secondary" id="new-board-button" type="button">
+              <i data-lucide="layout-dashboard"></i>
+              <span>New Board</span>
             </button>
-            <button class="button primary" id="originals-button">
-              <i data-lucide="download"></i>
-              <span>ZIP Originals</span>
+            <button class="button primary" id="new-document-button" type="button">
+              <i data-lucide="file-plus-2"></i>
+              <span>Add Document</span>
             </button>
           </div>
         </header>
 
-        <section class="import-panel" aria-label="Import instructions">
-          <div>
-            <strong>Use a manifest from any source</strong>
-            <span>Drop in JSON or CSV with columns like title, study, site, board, source, fileUrl, uploaded, owner, type, and size. The page stores it locally in this browser and never writes back to Coordinare.</span>
+        <section class="onboarding" aria-label="Onboarding">
+          <div class="onboarding-card lead">
+            <strong>Start with the General board</strong>
+            <p>
+              Use General for site-level documents like CLIA, licenses, GCP certificates, SOPs, and
+              non-study-specific credentials.
+            </p>
           </div>
-          <div class="import-actions">
-            <button class="button secondary" id="template-button">
-              <i data-lucide="file-down"></i>
-              <span>Template</span>
-            </button>
-            <button class="button warning" id="demo-button">
-              <i data-lucide="rotate-ccw"></i>
-              <span>Demo Data</span>
-            </button>
+          <div class="onboarding-card">
+            <strong>Create study boards</strong>
+            <span>Each study can have its own board for IRB, protocol, budget, delegation, and startup files.</span>
+          </div>
+          <div class="onboarding-card">
+            <strong>Add documents and tasks</strong>
+            <span>Attach a local file, paste a URL, set expirations, and create follow-ups for missing items.</span>
+          </div>
+          <div class="onboarding-card">
+            <strong>Export when ready</strong>
+            <span>Download CSV, JSON, or a ZIP with manifests, task exports, metadata, and originals when available.</span>
           </div>
         </section>
 
-        <section class="metrics" aria-label="Document export status">
+        <section class="metrics" aria-label="Workspace metrics">
+          <div class="metric">
+            <i data-lucide="layout-dashboard"></i>
+            <strong id="board-count">0</strong>
+            <span>Boards</span>
+          </div>
           <div class="metric">
             <i data-lucide="file-text"></i>
-            <strong id="selected-count">0</strong>
-            <span>Selected</span>
+            <strong id="document-count">0</strong>
+            <span>Documents</span>
           </div>
           <div class="metric">
-            <i data-lucide="check"></i>
+            <i data-lucide="check-circle-2"></i>
             <strong id="ready-count">0</strong>
-            <span>Originals ready</span>
+            <span>Export-ready files</span>
           </div>
           <div class="metric">
-            <i data-lucide="archive"></i>
-            <strong id="missing-count">0</strong>
-            <span>Missing URLs</span>
-          </div>
-          <div class="metric">
-            <i data-lucide="file-down"></i>
-            <strong>CSV/JSON</strong>
-            <span>Metadata</span>
+            <i data-lucide="clipboard-list"></i>
+            <strong id="open-task-count">0</strong>
+            <span>Open tasks</span>
           </div>
         </section>
 
-        <section class="toolbar" aria-label="Document filters">
-          <label class="search">
-            <i data-lucide="search"></i>
-            <input id="search-input" placeholder="Search files, studies, boards" />
-          </label>
-          <label class="select">
-            <span>Study</span>
-            <select id="study-filter"></select>
-            <i data-lucide="chevron-down"></i>
-          </label>
-          <label class="select">
-            <span>Site</span>
-            <select id="site-filter"></select>
-            <i data-lucide="chevron-down"></i>
-          </label>
-          <label class="select">
-            <span>Source</span>
-            <select id="source-filter"></select>
-            <i data-lucide="chevron-down"></i>
-          </label>
-          <button class="icon-button" title="Filters">
-            <i data-lucide="sliders-horizontal"></i>
-          </button>
+        <section class="view active" id="documents-view">
+          <div class="tabs" id="board-tabs"></div>
+          <div class="board-header">
+            <div>
+              <h2 class="board-title" id="active-board-title">General</h2>
+              <p class="subtitle" id="active-board-description"></p>
+            </div>
+            <div class="actions">
+              <button class="button secondary" id="import-button" type="button">
+                <i data-lucide="upload"></i>
+                <span>Import</span>
+              </button>
+              <input
+                class="file-input"
+                id="manifest-input"
+                type="file"
+                accept=".json,.csv,application/json,text/csv"
+              />
+              <button class="button secondary" id="template-button" type="button">
+                <i data-lucide="file-down"></i>
+                <span>Template</span>
+              </button>
+              <button class="button secondary" id="demo-button" type="button">
+                <i data-lucide="rotate-ccw"></i>
+                <span>Load Example</span>
+              </button>
+            </div>
+          </div>
+
+          <section class="board-toolbar" aria-label="Document filters">
+            <label class="search">
+              <i data-lucide="search"></i>
+              <input id="search-input" placeholder="Search files, owners, studies, boards" />
+            </label>
+            <label class="select">
+              <span>Status</span>
+              <select id="status-filter">
+                <option value="All">All</option>
+                <option value="Current">Current</option>
+                <option value="Expiring Soon">Expiring Soon</option>
+                <option value="Expired">Expired</option>
+                <option value="Missing">Missing</option>
+              </select>
+              <i data-lucide="chevron-down"></i>
+            </label>
+            <label class="select">
+              <span>Type</span>
+              <select id="type-filter"></select>
+              <i data-lucide="chevron-down"></i>
+            </label>
+            <label class="select">
+              <span>Source</span>
+              <select id="source-filter"></select>
+              <i data-lucide="chevron-down"></i>
+            </label>
+          </section>
+
+          <section class="panel" aria-label="Document inventory">
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="check-cell">
+                      <input id="select-visible" aria-label="Select visible documents" type="checkbox" />
+                    </th>
+                    <th>Document</th>
+                    <th>Board</th>
+                    <th>Owner</th>
+                    <th>Expires</th>
+                    <th>Status</th>
+                    <th>Source</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="document-rows"></tbody>
+              </table>
+            </div>
+            <div class="empty-state" id="document-empty" hidden>
+              <i data-lucide="file-plus-2"></i>
+              <h3>No documents yet</h3>
+              <p>Add a document to this board, or import a manifest from Coordinare, Task Board, R2, or another source.</p>
+              <button class="button primary" id="empty-add-document" type="button">
+                <i data-lucide="file-plus-2"></i>
+                <span>Add Document</span>
+              </button>
+            </div>
+          </section>
         </section>
 
-        <section class="table-wrap" aria-label="Document table">
-          <table>
-            <thead>
-              <tr>
-                <th class="check-cell">
-                  <input id="select-visible" aria-label="Select visible files" type="checkbox" />
-                </th>
-                <th>File</th>
-                <th>Study</th>
-                <th>Site</th>
-                <th>Board</th>
-                <th>Source</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="document-rows"></tbody>
-          </table>
+        <section class="view" id="tasks-view">
+          <div class="board-header">
+            <div>
+              <h2 class="board-title">Task Follow-up</h2>
+              <p class="subtitle">Track missing documents, review steps, and board-specific action items.</p>
+            </div>
+            <button class="button primary" id="new-task-button" type="button">
+              <i data-lucide="list-plus"></i>
+              <span>New Task</span>
+            </button>
+          </div>
+          <div class="task-grid">
+            <section class="task-list" id="task-list"></section>
+            <aside class="panel export-card">
+              <h3>Task Board Pattern</h3>
+              <p class="subtitle">
+                Tasks can be attached to General or a study board. Use them for missing originals,
+                expiration follow-up, PI review, or migration cleanup.
+              </p>
+              <button class="button secondary" id="task-export-button" type="button">
+                <i data-lucide="table-properties"></i>
+                <span>Export Tasks CSV</span>
+              </button>
+            </aside>
+          </div>
         </section>
-        <div class="log" id="log" role="status">Ready. Metadata exports work immediately; ZIP export works when selected rows include fetchable fileUrl values.</div>
+
+        <section class="view" id="export-view">
+          <div class="board-header">
+            <div>
+              <h2 class="board-title">Export Package</h2>
+              <p class="subtitle">
+                Create a read-only package with source metadata, board structure, documents, tasks,
+                original files, and an orphan report.
+              </p>
+            </div>
+            <button class="button primary" id="zip-button" type="button">
+              <i data-lucide="download"></i>
+              <span>ZIP Export</span>
+            </button>
+          </div>
+          <div class="export-grid">
+            <section class="panel export-card">
+              <h3>Download</h3>
+              <div class="actions" style="justify-content: flex-start">
+                <button class="button secondary" id="csv-button" type="button">
+                  <i data-lucide="table-properties"></i>
+                  <span>Documents CSV</span>
+                </button>
+                <button class="button secondary" id="json-button" type="button">
+                  <i data-lucide="database"></i>
+                  <span>Workspace JSON</span>
+                </button>
+                <button class="button secondary" id="orphan-button" type="button">
+                  <i data-lucide="circle-alert"></i>
+                  <span>Orphan Report</span>
+                </button>
+              </div>
+              <p class="subtitle">
+                ZIP export includes manifest.csv, manifest.json, task_board_export.csv,
+                boards.json, export_metadata.json, orphan_report.json, and any attached originals.
+              </p>
+            </section>
+            <aside class="panel export-card">
+              <h3>Package Contents</h3>
+              <div class="export-list" id="export-summary"></div>
+            </aside>
+          </div>
+        </section>
+
+        <div class="log" id="log" role="status">Ready. Create a board or sign in to name this local workspace.</div>
       </section>
     </main>
 
+    <div class="modal-overlay" id="login-modal">
+      <section class="modal small" role="dialog" aria-modal="true" aria-labelledby="login-title">
+        <header class="modal-header">
+          <h2 id="login-title">Login to Workspace</h2>
+          <button class="icon-button" data-close-modal="login-modal" title="Close" type="button">
+            <i data-lucide="x"></i>
+          </button>
+        </header>
+        <div class="modal-body">
+          <p class="subtitle">
+            This standalone GitHub Pages tool cannot authenticate against Polsia by itself. This
+            login names a local workspace so a user can work today; the Coordinare login button opens
+            the production login separately.
+          </p>
+          <div class="error" id="login-error"></div>
+          <div class="form-group">
+            <label for="login-name">Name</label>
+            <input id="login-name" placeholder="e.g., Dan Sfera" />
+          </div>
+          <div class="form-group">
+            <label for="login-site">Site or organization</label>
+            <input id="login-site" placeholder="e.g., Coordinare Research" />
+          </div>
+        </div>
+        <footer class="modal-footer">
+          <button class="button secondary" id="open-coordinare-login" type="button">
+            <i data-lucide="external-link"></i>
+            <span>Production Login</span>
+          </button>
+          <button class="button primary" id="save-login" type="button">
+            <i data-lucide="check"></i>
+            <span>Save Login</span>
+          </button>
+        </footer>
+      </section>
+    </div>
+
+    <div class="modal-overlay" id="board-modal">
+      <section class="modal small" role="dialog" aria-modal="true" aria-labelledby="board-modal-title">
+        <header class="modal-header">
+          <h2 id="board-modal-title">Create New Board</h2>
+          <button class="icon-button" data-close-modal="board-modal" title="Close" type="button">
+            <i data-lucide="x"></i>
+          </button>
+        </header>
+        <div class="modal-body">
+          <div class="error" id="board-error"></div>
+          <div class="form-group">
+            <label for="board-name-input">Board name</label>
+            <input id="board-name-input" placeholder="e.g., CO-204 Startup" />
+          </div>
+          <div class="form-group">
+            <label for="board-scope-input">Scope</label>
+            <select id="board-scope-input">
+              <option value="study">Study-specific</option>
+              <option value="site">General/site-specific</option>
+            </select>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="board-study-input">Study ID</label>
+              <input id="board-study-input" placeholder="e.g., CO-204" />
+            </div>
+            <div class="form-group">
+              <label for="board-site-input">Site</label>
+              <input id="board-site-input" placeholder="e.g., Phoenix Research" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="board-description-input">Description</label>
+            <input id="board-description-input" placeholder="Optional board description" />
+          </div>
+        </div>
+        <footer class="modal-footer">
+          <button class="button secondary" data-close-modal="board-modal" type="button">Cancel</button>
+          <button class="button primary" id="save-board" type="button">Create Board</button>
+        </footer>
+      </section>
+    </div>
+
+    <div class="modal-overlay" id="document-modal">
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
+        <header class="modal-header">
+          <h2 id="document-modal-title">Add Document</h2>
+          <button class="icon-button" data-close-modal="document-modal" title="Close" type="button">
+            <i data-lucide="x"></i>
+          </button>
+        </header>
+        <div class="modal-body">
+          <div class="error" id="document-error"></div>
+          <input id="document-id-input" type="hidden" />
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="document-title-input">Document name</label>
+              <input id="document-title-input" placeholder="e.g., PI CV signed" />
+            </div>
+            <div class="form-group">
+              <label for="document-board-input">Board</label>
+              <select id="document-board-input"></select>
+            </div>
+            <div class="form-group">
+              <label for="document-type-input">Document type</label>
+              <select id="document-type-input">
+                <option>Regulatory</option>
+                <option>IRB</option>
+                <option>Protocol</option>
+                <option>Budget</option>
+                <option>Contract</option>
+                <option>Credential</option>
+                <option>Training</option>
+                <option>Source</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="document-owner-input">Owner</label>
+              <input id="document-owner-input" placeholder="e.g., Regulatory Lead" />
+            </div>
+            <div class="form-group">
+              <label for="document-expiration-input">Expiration date</label>
+              <input id="document-expiration-input" type="date" />
+            </div>
+            <div class="form-group">
+              <label for="document-source-input">Source</label>
+              <select id="document-source-input">
+                <option>Document Manager</option>
+                <option>Task Board</option>
+                <option>Imported</option>
+                <option>Manual</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="document-file-input">Attach local file</label>
+              <input id="document-file-input" type="file" />
+              <span class="hint">Files are stored in this browser for export. Large files may exceed browser storage.</span>
+            </div>
+            <div class="form-group">
+              <label for="document-url-input">File URL</label>
+              <input id="document-url-input" placeholder="https://... or leave blank" />
+            </div>
+            <div class="form-group full">
+              <label for="document-notes-input">Notes</label>
+              <textarea id="document-notes-input" placeholder="Anything a coordinator, CRA, or migration operator needs to know"></textarea>
+            </div>
+          </div>
+        </div>
+        <footer class="modal-footer">
+          <button class="button secondary" data-close-modal="document-modal" type="button">Cancel</button>
+          <button class="button primary" id="save-document" type="button">Save Document</button>
+        </footer>
+      </section>
+    </div>
+
+    <div class="modal-overlay" id="task-modal">
+      <section class="modal small" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+        <header class="modal-header">
+          <h2 id="task-modal-title">New Task</h2>
+          <button class="icon-button" data-close-modal="task-modal" title="Close" type="button">
+            <i data-lucide="x"></i>
+          </button>
+        </header>
+        <div class="modal-body">
+          <div class="error" id="task-error"></div>
+          <div class="form-group">
+            <label for="task-title-input">Task</label>
+            <input id="task-title-input" placeholder="e.g., Upload current delegation log" />
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="task-board-input">Board</label>
+              <select id="task-board-input"></select>
+            </div>
+            <div class="form-group">
+              <label for="task-due-input">Due date</label>
+              <input id="task-due-input" type="date" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="task-assignee-input">Assignee</label>
+            <input id="task-assignee-input" placeholder="e.g., Coordinator" />
+          </div>
+          <div class="form-group">
+            <label for="task-notes-input">Notes</label>
+            <textarea id="task-notes-input" placeholder="Add context or acceptance criteria"></textarea>
+          </div>
+        </div>
+        <footer class="modal-footer">
+          <button class="button secondary" data-close-modal="task-modal" type="button">Cancel</button>
+          <button class="button primary" id="save-task" type="button">Save Task</button>
+        </footer>
+      </section>
+    </div>
+
     <script>
-      const demoDocuments = [
-        {
-          id: "doc-1049",
-          source: "Document Manager",
-          title: "Site activation checklist.pdf",
-          study: "CO-101",
-          site: "Phoenix Research",
-          board: "Startup",
-          type: "PDF",
-          size: "612 KB",
-          owner: "M. Chen",
-          uploaded: "2026-05-21",
-          status: "Ready",
-          fileUrl: "data:text/plain;base64,U2l0ZSBhY3RpdmF0aW9uIGNoZWNrbGlzdCBwbGFjZWhvbGRlci4K",
-        },
-        {
-          id: "doc-1057",
-          source: "Document Manager",
-          title: "IRB submission package.docx",
-          study: "CO-101",
-          site: "Phoenix Research",
-          board: "Regulatory",
-          type: "DOCX",
-          size: "1.8 MB",
-          owner: "A. Patel",
-          uploaded: "2026-05-22",
-          status: "Ready",
-          fileUrl: "data:text/plain;base64,SVJCIHN1Ym1pc3Npb24gcGFja2FnZSBwbGFjZWhvbGRlci4K",
-        },
-        {
-          id: "doc-1091",
-          source: "Document Manager",
-          title: "Budget assumptions v3.xlsx",
-          study: "CO-204",
-          site: "Desert Valley",
-          board: "Budget",
-          type: "XLSX",
-          size: "284 KB",
-          owner: "D. Sfera",
-          uploaded: "2026-05-24",
-          status: "Ready",
-          fileUrl: "data:text/csv;base64,SXRlbSxWYWx1ZQpQYXltZW50cyxEZW1vCg==",
-        },
-        {
-          id: "task-2207-a",
-          source: "Task Board",
-          title: "PI CV signed.pdf",
-          study: "CO-204",
-          site: "Desert Valley",
-          board: "PI Review",
-          type: "PDF",
-          size: "498 KB",
-          owner: "K. Alvarez",
-          uploaded: "2026-05-25",
-          status: "Ready",
-          fileUrl: "data:text/plain;base64,UEkgQ1Ygc2lnbmVkIHBsYWNlaG9sZGVyLgo=",
-        },
-        {
-          id: "task-2240-c",
-          source: "Task Board",
-          title: "Delegation log draft.csv",
-          study: "CO-311",
-          site: "North Clinic",
-          board: "Operations",
-          type: "CSV",
-          size: "88 KB",
-          owner: "R. Singh",
-          uploaded: "2026-05-26",
-          status: "Needs URL",
-          fileUrl: "",
-        },
-        {
-          id: "doc-1128",
-          source: "Document Manager",
-          title: "Protocol amendment 2.pdf",
-          study: "CO-311",
-          site: "North Clinic",
-          board: "Regulatory",
-          type: "PDF",
-          size: "2.6 MB",
-          owner: "L. Morgan",
-          uploaded: "2026-05-27",
-          status: "Ready",
-          fileUrl: "data:text/plain;base64,UHJvdG9jb2wgYW1lbmRtZW50IDIgcGxhY2Vob2xkZXIuCg==",
-        },
-      ];
+      const STORAGE_KEY = "coordinare.documents.workspace.v2";
+      const LOGIN_KEY = "coordinare.documents.localLogin";
+      const COORDINARE_LOGIN_URL = "https://coordinare.co/login?returnTo=/documents";
 
-      let documents = loadStoredDocuments() || demoDocuments;
+      const defaultWorkspace = {
+        boards: [
+          {
+            id: "board-general",
+            name: "General",
+            scope: "site",
+            study: "",
+            site: "Site-wide",
+            description: "Site-specific, non-study-specific documents such as licenses, SOPs, CLIA, GCP, and staff credentials.",
+            permanent: true,
+            createdAt: "2026-05-29T00:00:00.000Z",
+          },
+        ],
+        documents: [],
+        tasks: [],
+        selectedDocumentIds: [],
+        activeBoardId: "board-general",
+      };
 
-      const exportFields = [
-        "id",
-        "source",
-        "title",
-        "study",
-        "site",
-        "board",
-        "type",
-        "size",
-        "owner",
-        "uploaded",
-        "status",
-        "fileUrl",
-      ];
+      const exampleWorkspace = {
+        boards: [
+          defaultWorkspace.boards[0],
+          {
+            id: "board-co101",
+            name: "CO-101 Startup",
+            scope: "study",
+            study: "CO-101",
+            site: "Phoenix Research",
+            description: "Startup and activation documents for CO-101.",
+            permanent: false,
+            createdAt: "2026-05-29T00:00:00.000Z",
+          },
+          {
+            id: "board-co204",
+            name: "CO-204 Regulatory",
+            scope: "study",
+            study: "CO-204",
+            site: "Desert Valley",
+            description: "Regulatory and PI review documents for CO-204.",
+            permanent: false,
+            createdAt: "2026-05-29T00:00:00.000Z",
+          },
+        ],
+        documents: [
+          {
+            id: "doc-gcp-1",
+            boardId: "board-general",
+            title: "Site GCP certificate roster.pdf",
+            type: "Training",
+            owner: "Regulatory Lead",
+            expiration: "2026-11-30",
+            source: "Document Manager",
+            fileName: "site-gcp-certificate-roster.pdf",
+            fileUrl: "data:text/plain;base64,U2l0ZSBHQ1AgY2VydGlmaWNhdGUgcm9zdGVyIHBsYWNlaG9sZGVyLgo=",
+            size: "48 B",
+            notes: "Site-wide training tracker.",
+            createdAt: "2026-05-29T00:00:00.000Z",
+          },
+          {
+            id: "doc-co101-irb",
+            boardId: "board-co101",
+            title: "IRB approval letter.pdf",
+            type: "IRB",
+            owner: "A. Patel",
+            expiration: "2026-08-15",
+            source: "Document Manager",
+            fileName: "irb-approval-letter.pdf",
+            fileUrl: "data:text/plain;base64,SVJCIGFwcHJvdmFsIGxldHRlciBwbGFjZWhvbGRlci4K",
+            size: "41 B",
+            notes: "Continuing review due before expiration.",
+            createdAt: "2026-05-29T00:00:00.000Z",
+          },
+          {
+            id: "doc-co204-cv",
+            boardId: "board-co204",
+            title: "PI CV signed.pdf",
+            type: "Credential",
+            owner: "K. Alvarez",
+            expiration: "",
+            source: "Task Board",
+            fileName: "pi-cv-signed.pdf",
+            fileUrl: "data:text/plain;base64,UEkgQ1Ygc2lnbmVkIHBsYWNlaG9sZGVyLgo=",
+            size: "31 B",
+            notes: "Imported from task attachment.",
+            createdAt: "2026-05-29T00:00:00.000Z",
+          },
+          {
+            id: "doc-co204-delegation",
+            boardId: "board-co204",
+            title: "Delegation log draft.csv",
+            type: "Regulatory",
+            owner: "R. Singh",
+            expiration: "",
+            source: "Task Board",
+            fileName: "",
+            fileUrl: "",
+            size: "",
+            notes: "Needs original upload before export is complete.",
+            createdAt: "2026-05-29T00:00:00.000Z",
+          },
+        ],
+        tasks: [
+          {
+            id: "task-1",
+            boardId: "board-co204",
+            title: "Upload signed delegation log original",
+            assignee: "Regulatory Lead",
+            due: "2026-06-05",
+            done: false,
+            notes: "Required for full migration ZIP.",
+            createdAt: "2026-05-29T00:00:00.000Z",
+          },
+        ],
+        selectedDocumentIds: ["doc-gcp-1", "doc-co101-irb", "doc-co204-cv", "doc-co204-delegation"],
+        activeBoardId: "board-general",
+      };
 
-      const selected = new Set(documents.map((item) => item.id));
-      const state = {
+      let workspace = loadWorkspace();
+      let activeView = "documents";
+      let filters = {
         query: "",
-        study: "All",
-        site: "All",
+        status: "All",
+        type: "All",
         source: "All",
       };
 
-      const elements = {
-        totalCount: document.getElementById("total-count"),
-        selectedCount: document.getElementById("selected-count"),
+      const els = {
+        workspaceName: document.getElementById("workspace-name"),
+        loginButton: document.getElementById("login-button"),
+        coordinareLoginButton: document.getElementById("coordinare-login-button"),
+        openCoordinareLogin: document.getElementById("open-coordinare-login"),
+        boardList: document.getElementById("board-list"),
+        boardTabs: document.getElementById("board-tabs"),
+        boardCount: document.getElementById("board-count"),
+        documentCount: document.getElementById("document-count"),
         readyCount: document.getElementById("ready-count"),
-        missingCount: document.getElementById("missing-count"),
-        rows: document.getElementById("document-rows"),
-        log: document.getElementById("log"),
-        query: document.getElementById("search-input"),
-        study: document.getElementById("study-filter"),
-        site: document.getElementById("site-filter"),
-        source: document.getElementById("source-filter"),
-        manifestInput: document.getElementById("manifest-input"),
+        openTaskCount: document.getElementById("open-task-count"),
+        activeBoardTitle: document.getElementById("active-board-title"),
+        activeBoardDescription: document.getElementById("active-board-description"),
+        documentRows: document.getElementById("document-rows"),
+        documentEmpty: document.getElementById("document-empty"),
+        searchInput: document.getElementById("search-input"),
+        statusFilter: document.getElementById("status-filter"),
+        typeFilter: document.getElementById("type-filter"),
+        sourceFilter: document.getElementById("source-filter"),
         selectVisible: document.getElementById("select-visible"),
-        csvButton: document.getElementById("csv-button"),
-        jsonButton: document.getElementById("json-button"),
-        originalsButton: document.getElementById("originals-button"),
-        templateButton: document.getElementById("template-button"),
-        demoButton: document.getElementById("demo-button"),
+        manifestInput: document.getElementById("manifest-input"),
+        taskList: document.getElementById("task-list"),
+        exportSummary: document.getElementById("export-summary"),
+        log: document.getElementById("log"),
       };
 
-      function loadStoredDocuments() {
+      function loadWorkspace() {
         try {
-          const stored = localStorage.getItem("coordinare.documents.manifest");
-          return stored ? JSON.parse(stored) : null;
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (!stored) return structuredClone(defaultWorkspace);
+          const parsed = JSON.parse(stored);
+          const boards = parsed.boards?.length ? parsed.boards : structuredClone(defaultWorkspace.boards);
+          const hasGeneral = boards.some((board) => board.id === "board-general");
+          return {
+            boards: hasGeneral ? boards : [structuredClone(defaultWorkspace.boards[0]), ...boards],
+            documents: parsed.documents || [],
+            tasks: parsed.tasks || [],
+            selectedDocumentIds: parsed.selectedDocumentIds || [],
+            activeBoardId: parsed.activeBoardId || "board-general",
+          };
         } catch {
-          return null;
+          return structuredClone(defaultWorkspace);
         }
       }
 
-      function storeDocuments() {
-        localStorage.setItem("coordinare.documents.manifest", JSON.stringify(documents));
+      function saveWorkspace() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(workspace));
       }
 
       function setLog(message) {
-        elements.log.textContent = message;
+        els.log.textContent = message;
       }
 
-      function unique(field) {
-        return ["All", ...Array.from(new Set(documents.map((item) => item[field]))).sort()];
+      function id(prefix) {
+        return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
       }
 
-      function fillSelect(select, options) {
-        select.innerHTML = options.map((option) => `<option value="${option}">${option}</option>`).join("");
-      }
-
-      function refreshFilters() {
-        const current = {
-          study: state.study,
-          site: state.site,
-          source: state.source,
-        };
-        fillSelect(elements.study, unique("study"));
-        fillSelect(elements.site, unique("site"));
-        fillSelect(elements.source, unique("source"));
-        ["study", "site", "source"].forEach((field) => {
-          if (unique(field).includes(current[field])) state[field] = current[field];
-          else state[field] = "All";
-          elements[field].value = state[field];
-        });
-      }
-
-      function filteredDocuments() {
-        const normalized = state.query.trim().toLowerCase();
-        return documents.filter((item) => {
-          const matchesQuery =
-            !normalized ||
-            [item.title, item.study, item.site, item.board, item.owner, item.type, item.source]
-              .join(" ")
-              .toLowerCase()
-              .includes(normalized);
-          return (
-            matchesQuery &&
-            (state.study === "All" || item.study === state.study) &&
-            (state.site === "All" || item.site === state.site) &&
-            (state.source === "All" || item.source === state.source)
-          );
-        });
-      }
-
-      function selectedRows() {
-        return documents.filter((item) => selected.has(item.id));
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
       }
 
       function escapeCsv(value) {
         return `"${String(value ?? "").replaceAll('"', '""')}"`;
       }
 
-      function toCsv(rows) {
-        return [
-          exportFields.join(","),
-          ...rows.map((row) => exportFields.map((field) => escapeCsv(row[field])).join(",")),
-        ].join("\n");
+      function boardById(boardId) {
+        return workspace.boards.find((board) => board.id === boardId) || workspace.boards[0];
+      }
+
+      function activeBoard() {
+        return boardById(workspace.activeBoardId);
+      }
+
+      function selectedIds() {
+        return new Set(workspace.selectedDocumentIds);
+      }
+
+      function setSelectedIds(ids) {
+        workspace.selectedDocumentIds = Array.from(new Set(ids));
+        saveWorkspace();
+      }
+
+      function isReady(document) {
+        return Boolean(document.fileUrl || document.fileData);
+      }
+
+      function docStatus(document) {
+        if (!isReady(document)) return { label: "Missing", cls: "bad" };
+        if (!document.expiration) return { label: "Current", cls: "good" };
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const exp = new Date(`${document.expiration}T00:00:00`);
+        const diff = Math.ceil((exp - today) / 86400000);
+        if (diff < 0) return { label: "Expired", cls: "bad" };
+        if (diff <= 45) return { label: "Expiring Soon", cls: "warning" };
+        return { label: "Current", cls: "good" };
+      }
+
+      function formatDate(value) {
+        if (!value) return "No expiration";
+        const date = new Date(`${value}T00:00:00`);
+        if (Number.isNaN(date.valueOf())) return value;
+        return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+      }
+
+      function formatBytes(bytes) {
+        if (!bytes && bytes !== 0) return "";
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${Math.round(bytes / 102.4) / 10} KB`;
+        return `${Math.round(bytes / 1024 / 102.4) / 10} MB`;
       }
 
       function downloadFile(filename, contents, type) {
         const blob = new Blob([contents], { type });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = filename;
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-        URL.revokeObjectURL(url);
+        downloadBlob(filename, blob);
       }
 
       function downloadBlob(filename, blob) {
@@ -904,28 +1661,635 @@
         URL.revokeObjectURL(url);
       }
 
-      function normalizeRow(row, index) {
-        const fallbackTitle = row.title || row.name || row.filename || row.file_name || `document-${index + 1}`;
-        const fileUrl = row.fileUrl || row.file_url || row.url || row.download_url || row.signedUrl || row.signed_url || "";
+      function fillSelect(select, options, selected = "All") {
+        select.innerHTML = options.map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`).join("");
+        select.value = options.includes(selected) ? selected : options[0];
+      }
+
+      function updateWorkspaceName() {
+        const login = getLogin();
+        els.workspaceName.textContent = login ? `${login.name} - ${login.site}` : "Not signed in";
+        els.loginButton.innerHTML = login
+          ? '<i data-lucide="user-check"></i><span>Workspace</span>'
+          : '<i data-lucide="log-in"></i><span>Login</span>';
+      }
+
+      function getLogin() {
+        try {
+          const stored = localStorage.getItem(LOGIN_KEY);
+          return stored ? JSON.parse(stored) : null;
+        } catch {
+          return null;
+        }
+      }
+
+      function openModal(id) {
+        document.getElementById(id).classList.add("open");
+        window.setTimeout(() => {
+          const first = document.querySelector(`#${id} input, #${id} select, #${id} textarea, #${id} button`);
+          first?.focus();
+        }, 0);
+      }
+
+      function closeModal(id) {
+        document.getElementById(id).classList.remove("open");
+      }
+
+      function showError(id, message) {
+        const el = document.getElementById(id);
+        el.textContent = message;
+        el.style.display = "block";
+      }
+
+      function clearError(id) {
+        const el = document.getElementById(id);
+        el.textContent = "";
+        el.style.display = "none";
+      }
+
+      function render() {
+        updateWorkspaceName();
+        renderNav();
+        renderBoards();
+        renderMetrics();
+        renderFilters();
+        renderDocuments();
+        renderTasks();
+        renderExportSummary();
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      function renderNav() {
+        document.querySelectorAll(".nav-item").forEach((button) => {
+          button.classList.toggle("active", button.dataset.view === activeView);
+        });
+        document.querySelectorAll(".view").forEach((view) => {
+          view.classList.toggle("active", view.id === `${activeView}-view`);
+        });
+      }
+
+      function renderBoards() {
+        const activeId = workspace.activeBoardId;
+        const boardMarkup = workspace.boards
+          .map((board) => {
+            const icon = board.scope === "site" ? "building-2" : "folder-kanban";
+            return `
+              <button class="board-row ${board.id === activeId ? "active" : ""}" data-board-id="${escapeHtml(board.id)}" type="button" title="${escapeHtml(board.name)}">
+                <i data-lucide="${icon}"></i>
+                <span>${escapeHtml(board.name)}</span>
+              </button>
+            `;
+          })
+          .join("");
+
+        const tabMarkup = workspace.boards
+          .map((board) => {
+            const icon = board.scope === "site" ? "building-2" : "folder-kanban";
+            return `
+              <button class="tab-button ${board.id === activeId ? "active" : ""}" data-board-id="${escapeHtml(board.id)}" type="button">
+                <i data-lucide="${icon}"></i>
+                <span>${escapeHtml(board.name)}</span>
+              </button>
+            `;
+          })
+          .join("");
+
+        els.boardList.innerHTML = boardMarkup;
+        els.boardTabs.innerHTML = tabMarkup;
+
+        document.querySelectorAll("[data-board-id]").forEach((button) => {
+          button.addEventListener("click", () => {
+            workspace.activeBoardId = button.dataset.boardId;
+            saveWorkspace();
+            activeView = "documents";
+            render();
+          });
+        });
+
+        const board = activeBoard();
+        const badge = board.scope === "site" ? "General" : "Study";
+        const cls = board.scope === "site" ? "site" : "study";
+        els.activeBoardTitle.innerHTML = `${escapeHtml(board.name)} <span class="badge ${cls}">${badge}</span>`;
+        els.activeBoardDescription.textContent = board.description || "No board description yet.";
+      }
+
+      function renderMetrics() {
+        els.boardCount.textContent = workspace.boards.length;
+        els.documentCount.textContent = workspace.documents.length;
+        els.readyCount.textContent = workspace.documents.filter(isReady).length;
+        els.openTaskCount.textContent = workspace.tasks.filter((task) => !task.done).length;
+      }
+
+      function documentsForActiveBoard() {
+        return workspace.documents.filter((document) => document.boardId === workspace.activeBoardId);
+      }
+
+      function visibleDocuments() {
+        const query = filters.query.trim().toLowerCase();
+        return documentsForActiveBoard().filter((document) => {
+          const board = boardById(document.boardId);
+          const status = docStatus(document).label;
+          const haystack = [
+            document.title,
+            document.type,
+            document.owner,
+            document.source,
+            document.notes,
+            board.name,
+            board.study,
+            board.site,
+          ]
+            .join(" ")
+            .toLowerCase();
+          return (
+            (!query || haystack.includes(query)) &&
+            (filters.status === "All" || status === filters.status) &&
+            (filters.type === "All" || document.type === filters.type) &&
+            (filters.source === "All" || document.source === filters.source)
+          );
+        });
+      }
+
+      function renderFilters() {
+        const docs = documentsForActiveBoard();
+        const types = ["All", ...Array.from(new Set(docs.map((doc) => doc.type || "Other"))).sort()];
+        const sources = ["All", ...Array.from(new Set(docs.map((doc) => doc.source || "Manual"))).sort()];
+        fillSelect(els.typeFilter, types, filters.type);
+        fillSelect(els.sourceFilter, sources, filters.source);
+        els.searchInput.value = filters.query;
+        els.statusFilter.value = filters.status;
+      }
+
+      function renderDocuments() {
+        const docs = visibleDocuments();
+        const selected = selectedIds();
+        els.documentRows.innerHTML = docs
+          .map((document) => {
+            const board = boardById(document.boardId);
+            const status = docStatus(document);
+            const hasFile = isReady(document);
+            return `
+              <tr>
+                <td class="check-cell">
+                  <input type="checkbox" data-select-doc="${escapeHtml(document.id)}" ${selected.has(document.id) ? "checked" : ""} aria-label="Select ${escapeHtml(document.title)}" />
+                </td>
+                <td>
+                  <div class="file-title">
+                    <i data-lucide="${hasFile ? "file-check-2" : "file-question"}"></i>
+                    <div>
+                      <strong>${escapeHtml(document.title)}</strong>
+                      <span>${escapeHtml(document.type || "Other")} ${document.fileName ? "- " + escapeHtml(document.fileName) : ""}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  ${escapeHtml(board.name)}
+                  <div class="hint">${escapeHtml(board.scope === "study" ? board.study || "Study board" : "Site-wide")}</div>
+                </td>
+                <td>${escapeHtml(document.owner || "Unassigned")}</td>
+                <td>${escapeHtml(formatDate(document.expiration))}</td>
+                <td><span class="status ${status.cls}">${status.label}</span></td>
+                <td>${escapeHtml(document.source || "Manual")}</td>
+                <td>
+                  <div class="row-actions">
+                    <button class="icon-button" data-open-doc="${escapeHtml(document.id)}" title="Open or download" type="button"><i data-lucide="external-link"></i></button>
+                    <button class="icon-button" data-edit-doc="${escapeHtml(document.id)}" title="Edit" type="button"><i data-lucide="pencil"></i></button>
+                    <button class="icon-button" data-delete-doc="${escapeHtml(document.id)}" title="Delete" type="button"><i data-lucide="trash-2"></i></button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          })
+          .join("");
+
+        els.documentEmpty.hidden = docs.length > 0;
+        els.selectVisible.checked = docs.length > 0 && docs.every((doc) => selected.has(doc.id));
+        els.selectVisible.indeterminate = docs.some((doc) => selected.has(doc.id)) && !els.selectVisible.checked;
+
+        document.querySelectorAll("[data-select-doc]").forEach((input) => {
+          input.addEventListener("change", () => {
+            const next = selectedIds();
+            if (input.checked) next.add(input.dataset.selectDoc);
+            else next.delete(input.dataset.selectDoc);
+            setSelectedIds(Array.from(next));
+            render();
+          });
+        });
+
+        document.querySelectorAll("[data-open-doc]").forEach((button) => {
+          button.addEventListener("click", () => openDocument(button.dataset.openDoc));
+        });
+
+        document.querySelectorAll("[data-edit-doc]").forEach((button) => {
+          button.addEventListener("click", () => openDocumentModal(button.dataset.editDoc));
+        });
+
+        document.querySelectorAll("[data-delete-doc]").forEach((button) => {
+          button.addEventListener("click", () => deleteDocument(button.dataset.deleteDoc));
+        });
+      }
+
+      function renderTasks() {
+        if (!workspace.tasks.length) {
+          els.taskList.innerHTML = `
+            <div class="empty-state">
+              <i data-lucide="clipboard-list"></i>
+              <h3>No tasks yet</h3>
+              <p>Create a follow-up task for missing documents, expiring files, or board cleanup.</p>
+              <button class="button primary" id="empty-new-task" type="button"><i data-lucide="list-plus"></i><span>New Task</span></button>
+            </div>
+          `;
+          document.getElementById("empty-new-task")?.addEventListener("click", openTaskModal);
+          return;
+        }
+
+        els.taskList.innerHTML = workspace.tasks
+          .map((task) => {
+            const board = boardById(task.boardId);
+            return `
+              <article class="task-card ${task.done ? "done" : ""}">
+                <input type="checkbox" data-toggle-task="${escapeHtml(task.id)}" ${task.done ? "checked" : ""} aria-label="Complete ${escapeHtml(task.title)}" />
+                <div>
+                  <strong>${escapeHtml(task.title)}</strong>
+                  <span>${escapeHtml(board.name)} - ${escapeHtml(task.assignee || "Unassigned")} ${task.due ? "- Due " + escapeHtml(formatDate(task.due)) : ""}</span>
+                  ${task.notes ? `<span>${escapeHtml(task.notes)}</span>` : ""}
+                </div>
+                <button class="icon-button" data-delete-task="${escapeHtml(task.id)}" title="Delete task" type="button"><i data-lucide="trash-2"></i></button>
+              </article>
+            `;
+          })
+          .join("");
+
+        document.querySelectorAll("[data-toggle-task]").forEach((input) => {
+          input.addEventListener("change", () => {
+            const task = workspace.tasks.find((item) => item.id === input.dataset.toggleTask);
+            if (task) task.done = input.checked;
+            saveWorkspace();
+            render();
+            setLog(task?.done ? "Task marked complete." : "Task reopened.");
+          });
+        });
+
+        document.querySelectorAll("[data-delete-task]").forEach((button) => {
+          button.addEventListener("click", () => {
+            workspace.tasks = workspace.tasks.filter((task) => task.id !== button.dataset.deleteTask);
+            saveWorkspace();
+            render();
+            setLog("Task deleted.");
+          });
+        });
+      }
+
+      function renderExportSummary() {
+        const selected = selectedRows();
+        const missing = selected.filter((doc) => !isReady(doc)).length;
+        const originals = selected.filter(isReady).length;
+        els.exportSummary.innerHTML = `
+          <div><span>Boards</span><strong>${workspace.boards.length}</strong></div>
+          <div><span>Documents</span><strong>${workspace.documents.length}</strong></div>
+          <div><span>Selected documents</span><strong>${selected.length}</strong></div>
+          <div><span>Originals available</span><strong>${originals}</strong></div>
+          <div><span>Missing originals</span><strong>${missing}</strong></div>
+          <div><span>Tasks</span><strong>${workspace.tasks.length}</strong></div>
+        `;
+      }
+
+      function selectedRows() {
+        const selected = selectedIds();
+        return workspace.documents.filter((doc) => selected.has(doc.id));
+      }
+
+      function openDocument(docId) {
+        const document = workspace.documents.find((doc) => doc.id === docId);
+        if (!document) return;
+        const url = document.fileData || document.fileUrl;
+        if (!url) {
+          setLog("This document does not have an original file or URL yet.");
+          return;
+        }
+        if (url.startsWith("data:")) {
+          downloadBlob(document.fileName || `${document.title}.txt`, dataUrlToBlob(url));
+        } else {
+          window.open(url, "_blank", "noopener");
+        }
+      }
+
+      function dataUrlToBlob(dataUrl) {
+        const [header, body] = dataUrl.split(",");
+        const mime = header.match(/data:([^;]+)/)?.[1] || "application/octet-stream";
+        const binary = atob(body || "");
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+        return new Blob([bytes], { type: mime });
+      }
+
+      function openDocumentModal(docId = "") {
+        clearError("document-error");
+        const doc = workspace.documents.find((item) => item.id === docId);
+        document.getElementById("document-modal-title").textContent = doc ? "Edit Document" : "Add Document";
+        document.getElementById("document-id-input").value = doc?.id || "";
+        fillBoardSelect(document.getElementById("document-board-input"), doc?.boardId || workspace.activeBoardId);
+        document.getElementById("document-title-input").value = doc?.title || "";
+        document.getElementById("document-type-input").value = doc?.type || "Regulatory";
+        document.getElementById("document-owner-input").value = doc?.owner || "";
+        document.getElementById("document-expiration-input").value = doc?.expiration || "";
+        document.getElementById("document-source-input").value = doc?.source || "Document Manager";
+        document.getElementById("document-url-input").value = doc?.fileUrl && !doc.fileUrl.startsWith("data:") ? doc.fileUrl : "";
+        document.getElementById("document-notes-input").value = doc?.notes || "";
+        document.getElementById("document-file-input").value = "";
+        openModal("document-modal");
+      }
+
+      function fillBoardSelect(select, selectedBoardId) {
+        select.innerHTML = workspace.boards
+          .map((board) => `<option value="${escapeHtml(board.id)}">${escapeHtml(board.name)}</option>`)
+          .join("");
+        select.value = selectedBoardId;
+      }
+
+      async function saveDocumentFromModal() {
+        clearError("document-error");
+        const editId = document.getElementById("document-id-input").value;
+        const title = document.getElementById("document-title-input").value.trim();
+        const boardId = document.getElementById("document-board-input").value;
+        if (!title) {
+          showError("document-error", "Document name is required.");
+          return;
+        }
+        const fileInput = document.getElementById("document-file-input");
+        let fileData = "";
+        let fileName = "";
+        let size = "";
+        if (fileInput.files[0]) {
+          const file = fileInput.files[0];
+          try {
+            fileData = await readFileAsDataUrl(file);
+            fileName = file.name;
+            size = formatBytes(file.size);
+          } catch {
+            showError("document-error", "Could not read that file.");
+            return;
+          }
+        }
+
+        const existing = workspace.documents.find((doc) => doc.id === editId);
+        const next = {
+          id: existing?.id || id("doc"),
+          boardId,
+          title,
+          type: document.getElementById("document-type-input").value,
+          owner: document.getElementById("document-owner-input").value.trim(),
+          expiration: document.getElementById("document-expiration-input").value,
+          source: document.getElementById("document-source-input").value,
+          fileName: fileName || existing?.fileName || "",
+          fileUrl: fileData || document.getElementById("document-url-input").value.trim() || existing?.fileUrl || "",
+          fileData: fileData || existing?.fileData || "",
+          size: size || existing?.size || "",
+          notes: document.getElementById("document-notes-input").value.trim(),
+          createdAt: existing?.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+        if (existing) {
+          workspace.documents = workspace.documents.map((doc) => (doc.id === existing.id ? next : doc));
+        } else {
+          workspace.documents.push(next);
+          workspace.selectedDocumentIds.push(next.id);
+        }
+        workspace.activeBoardId = boardId;
+        try {
+          saveWorkspace();
+        } catch {
+          showError("document-error", "Browser storage is full. Try using a URL instead of attaching a large local file.");
+          return;
+        }
+        closeModal("document-modal");
+        render();
+        setLog(existing ? "Document updated." : "Document added.");
+      }
+
+      function readFileAsDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function deleteDocument(docId) {
+        const doc = workspace.documents.find((item) => item.id === docId);
+        if (!doc) return;
+        if (!window.confirm(`Delete "${doc.title}"?`)) return;
+        workspace.documents = workspace.documents.filter((item) => item.id !== docId);
+        workspace.selectedDocumentIds = workspace.selectedDocumentIds.filter((idValue) => idValue !== docId);
+        saveWorkspace();
+        render();
+        setLog("Document deleted.");
+      }
+
+      function openBoardModal() {
+        clearError("board-error");
+        document.getElementById("board-name-input").value = "";
+        document.getElementById("board-scope-input").value = "study";
+        document.getElementById("board-study-input").value = "";
+        document.getElementById("board-site-input").value = getLogin()?.site || "";
+        document.getElementById("board-description-input").value = "";
+        openModal("board-modal");
+      }
+
+      function saveBoardFromModal() {
+        clearError("board-error");
+        const name = document.getElementById("board-name-input").value.trim();
+        const scope = document.getElementById("board-scope-input").value;
+        const study = document.getElementById("board-study-input").value.trim();
+        const site = document.getElementById("board-site-input").value.trim();
+        if (!name) {
+          showError("board-error", "Board name is required.");
+          return;
+        }
+        if (scope === "study" && !study) {
+          showError("board-error", "Study-specific boards need a Study ID.");
+          return;
+        }
+        const board = {
+          id: id("board"),
+          name,
+          scope,
+          study: scope === "study" ? study : "",
+          site: site || getLogin()?.site || "Site-wide",
+          description: document.getElementById("board-description-input").value.trim(),
+          permanent: false,
+          createdAt: new Date().toISOString(),
+        };
+        workspace.boards.push(board);
+        workspace.activeBoardId = board.id;
+        saveWorkspace();
+        closeModal("board-modal");
+        activeView = "documents";
+        render();
+        setLog(`Board "${board.name}" created.`);
+      }
+
+      function openTaskModal() {
+        clearError("task-error");
+        document.getElementById("task-title-input").value = "";
+        fillBoardSelect(document.getElementById("task-board-input"), workspace.activeBoardId);
+        document.getElementById("task-due-input").value = "";
+        document.getElementById("task-assignee-input").value = "";
+        document.getElementById("task-notes-input").value = "";
+        openModal("task-modal");
+      }
+
+      function saveTaskFromModal() {
+        clearError("task-error");
+        const title = document.getElementById("task-title-input").value.trim();
+        if (!title) {
+          showError("task-error", "Task title is required.");
+          return;
+        }
+        workspace.tasks.push({
+          id: id("task"),
+          boardId: document.getElementById("task-board-input").value,
+          title,
+          due: document.getElementById("task-due-input").value,
+          assignee: document.getElementById("task-assignee-input").value.trim(),
+          notes: document.getElementById("task-notes-input").value.trim(),
+          done: false,
+          createdAt: new Date().toISOString(),
+        });
+        saveWorkspace();
+        closeModal("task-modal");
+        activeView = "tasks";
+        render();
+        setLog("Task created.");
+      }
+
+      function documentRowsForExport(rows = selectedRows()) {
+        return rows.map((doc) => {
+          const board = boardById(doc.boardId);
+          return {
+            id: doc.id,
+            board_id: doc.boardId,
+            board_name: board.name,
+            board_scope: board.scope,
+            study_id: board.study,
+            site: board.site,
+            title: doc.title,
+            type: doc.type,
+            owner: doc.owner,
+            expiration: doc.expiration,
+            status: docStatus(doc).label,
+            source: doc.source,
+            file_name: doc.fileName,
+            file_url: doc.fileUrl && !doc.fileUrl.startsWith("data:") ? doc.fileUrl : "",
+            size: doc.size,
+            notes: doc.notes,
+            created_at: doc.createdAt,
+            updated_at: doc.updatedAt || "",
+          };
+        });
+      }
+
+      function taskRowsForExport() {
+        return workspace.tasks.map((task) => {
+          const board = boardById(task.boardId);
+          return {
+            id: task.id,
+            board_id: task.boardId,
+            board_name: board.name,
+            study_id: board.study,
+            site: board.site,
+            title: task.title,
+            assignee: task.assignee,
+            due: task.due,
+            done: task.done ? "yes" : "no",
+            notes: task.notes,
+            created_at: task.createdAt,
+          };
+        });
+      }
+
+      function toCsv(rows) {
+        const headers = Array.from(new Set(rows.flatMap((row) => Object.keys(row))));
+        return [headers.join(","), ...rows.map((row) => headers.map((field) => escapeCsv(row[field])).join(","))].join("\n");
+      }
+
+      function exportMetadata() {
         return {
-          id: String(row.id || row.document_id || row.attachment_id || row.key || `import-${index + 1}`),
-          source: String(row.source || row.origin || row.table || "Imported"),
-          title: String(fallbackTitle),
-          study: String(row.study || row.study_id || row.studyName || row.study_name || "Unassigned"),
-          site: String(row.site || row.site_id || row.siteName || row.site_name || "Unassigned"),
-          board: String(row.board || row.board_name || row.task_board || "Unassigned"),
-          type: String(row.type || row.mime_type || row.file_type || extensionFor(fallbackTitle) || "File").toUpperCase(),
-          size: String(row.size || row.file_size || row.bytes || ""),
-          owner: String(row.owner || row.created_by || row.uploaded_by || ""),
-          uploaded: String(row.uploaded || row.created_at || row.updated_at || row.uploaded_at || ""),
-          status: fileUrl ? "Ready" : "Needs URL",
-          fileUrl: String(fileUrl),
+          generated_at: new Date().toISOString(),
+          generated_by: getLogin() || null,
+          tool: "Coordinare Documents Manager standalone",
+          boards: workspace.boards.length,
+          documents: workspace.documents.length,
+          tasks: workspace.tasks.length,
+          selected_documents: selectedRows().length,
+          originals_available: selectedRows().filter(isReady).length,
+          originals_missing: selectedRows().filter((doc) => !isReady(doc)).length,
         };
       }
 
-      function extensionFor(filename) {
-        const match = String(filename).match(/\.([a-z0-9]+)$/i);
-        return match ? match[1] : "";
+      function orphanReport() {
+        return {
+          generated_at: new Date().toISOString(),
+          missing_originals: selectedRows()
+            .filter((doc) => !isReady(doc))
+            .map((doc) => ({
+              id: doc.id,
+              title: doc.title,
+              board: boardById(doc.boardId).name,
+              reason: "No attached local file or downloadable file URL",
+            })),
+          documents_without_board: workspace.documents
+            .filter((doc) => !workspace.boards.some((board) => board.id === doc.boardId))
+            .map((doc) => ({ id: doc.id, title: doc.title, board_id: doc.boardId })),
+        };
+      }
+
+      async function exportZip() {
+        const selected = selectedRows();
+        if (!selected.length) {
+          setLog("Select at least one document before creating a ZIP export.");
+          return;
+        }
+        const zip = new JSZip();
+        zip.file("manifest.csv", toCsv(documentRowsForExport(selected)));
+        zip.file("manifest.json", JSON.stringify(documentRowsForExport(selected), null, 2));
+        zip.file("boards.json", JSON.stringify(workspace.boards, null, 2));
+        zip.file("task_board_export.csv", toCsv(taskRowsForExport()));
+        zip.file("task_board_export.json", JSON.stringify(taskRowsForExport(), null, 2));
+        zip.file("orphan_report.json", JSON.stringify(orphanReport(), null, 2));
+        zip.file("export_metadata.json", JSON.stringify(exportMetadata(), null, 2));
+
+        const originals = zip.folder("originals");
+        for (const doc of selected) {
+          const url = doc.fileData || doc.fileUrl;
+          if (!url) continue;
+          const board = boardById(doc.boardId);
+          const filename = safeFilename(`${board.name}/${doc.fileName || doc.title || doc.id}`);
+          try {
+            if (url.startsWith("data:")) {
+              originals.file(filename, dataUrlToBlob(url));
+            } else {
+              const response = await fetch(url);
+              if (!response.ok) throw new Error(`HTTP ${response.status}`);
+              originals.file(filename, await response.blob());
+            }
+          } catch (error) {
+            zip.file(`originals_fetch_errors/${safeFilename(doc.id)}.txt`, `${doc.title}\n${url}\n${error.message}`);
+          }
+        }
+        const blob = await zip.generateAsync({ type: "blob" });
+        downloadBlob(`coordinare-document-export-${new Date().toISOString().slice(0, 10)}.zip`, blob);
+        setLog("ZIP export created.");
+      }
+
+      function safeFilename(value) {
+        return String(value || "file")
+          .replaceAll("\\", "/")
+          .split("/")
+          .map((part) => part.replace(/[^a-z0-9._ -]/gi, "_").trim() || "untitled")
+          .join("/");
       }
 
       function csvToRows(text) {
@@ -961,7 +2325,7 @@
         }
         row.push(value);
         rows.push(row);
-        const headers = rows.shift().map((header) => header.trim());
+        const headers = rows.shift()?.map((header) => header.trim()) || [];
         return rows
           .filter((cells) => cells.some((cell) => cell.trim()))
           .map((cells) => Object.fromEntries(headers.map((header, index) => [header, cells[index] || ""])));
@@ -977,208 +2341,221 @@
         throw new Error("JSON must be an array, or include manifest/documents/files.");
       }
 
+      function normalizeImportRow(row, index) {
+        const title = row.title || row.name || row.filename || row.file_name || `Imported document ${index + 1}`;
+        const study = row.study || row.study_id || row.studyName || row.study_name || "";
+        const site = row.site || row.site_id || row.siteName || row.site_name || getLogin()?.site || "Imported";
+        const boardName = row.board || row.board_name || row.task_board || study || "General";
+        const board = findOrCreateImportBoard(boardName, study, site);
+        const fileUrl = row.fileUrl || row.file_url || row.url || row.download_url || row.signedUrl || row.signed_url || "";
+        return {
+          id: String(row.id || row.document_id || row.attachment_id || row.key || id("import")),
+          boardId: board.id,
+          title: String(title),
+          type: String(row.type || row.doc_type || row.file_type || extensionFor(title) || "Other"),
+          owner: String(row.owner || row.created_by || row.uploaded_by || ""),
+          expiration: String(row.expiration || row.expiration_date || row.expires || ""),
+          source: String(row.source || row.origin || row.table || "Imported"),
+          fileName: String(row.fileName || row.file_name || row.filename || title),
+          fileUrl: String(fileUrl),
+          fileData: "",
+          size: String(row.size || row.file_size || row.bytes || ""),
+          notes: String(row.notes || ""),
+          createdAt: String(row.created_at || row.uploaded || row.uploaded_at || new Date().toISOString()),
+        };
+      }
+
+      function findOrCreateImportBoard(name, study, site) {
+        if (!study && (!name || name === "General")) return boardById("board-general");
+        const existing = workspace.boards.find((board) => board.name === name || (study && board.study === study));
+        if (existing) return existing;
+        const board = {
+          id: id("board"),
+          name: name || study || "Imported Board",
+          scope: study ? "study" : "site",
+          study: study || "",
+          site: site || getLogin()?.site || "Imported",
+          description: study ? `Imported study board for ${study}.` : "Imported site-level board.",
+          permanent: false,
+          createdAt: new Date().toISOString(),
+        };
+        workspace.boards.push(board);
+        return board;
+      }
+
+      function extensionFor(filename) {
+        const match = String(filename).match(/\.([a-z0-9]+)$/i);
+        return match ? match[1].toUpperCase() : "";
+      }
+
       async function importManifest(file) {
-        const text = await file.text();
-        const rows = parseManifest(text, file.name).map(normalizeRow);
-        documents = rows;
-        selected.clear();
-        rows.forEach((row) => selected.add(row.id));
-        storeDocuments();
-        refreshFilters();
+        try {
+          const text = await file.text();
+          const rows = parseManifest(text, file.name).map(normalizeImportRow);
+          const existingIds = new Set(workspace.documents.map((doc) => doc.id));
+          const deduped = rows.map((doc) => (existingIds.has(doc.id) ? { ...doc, id: id("import") } : doc));
+          workspace.documents.push(...deduped);
+          workspace.selectedDocumentIds.push(...deduped.map((doc) => doc.id));
+          if (deduped[0]) workspace.activeBoardId = deduped[0].boardId;
+          saveWorkspace();
+          activeView = "documents";
+          render();
+          setLog(`Imported ${deduped.length} document${deduped.length === 1 ? "" : "s"} from ${file.name}.`);
+        } catch (error) {
+          setLog(`Import failed: ${error.message}`);
+        } finally {
+          els.manifestInput.value = "";
+        }
+      }
+
+      function loadExample() {
+        if (workspace.documents.length && !window.confirm("Replace the current local workspace with example data?")) return;
+        workspace = structuredClone(exampleWorkspace);
+        saveWorkspace();
+        activeView = "documents";
         render();
-        setLog(`Imported ${rows.length} rows from ${file.name}. Stored locally in this browser.`);
+        setLog("Example Essential Doc Tracker-style workspace loaded.");
       }
 
-      function filenameFor(item) {
-        return `${item.study || "study"}__${item.site || "site"}__${item.board || "board"}__${item.title || item.id}`
-          .replace(/[\\/:*?"<>|]+/g, "-")
-          .replace(/\s+/g, " ")
-          .trim();
-      }
-
-      async function exportOriginalsZip() {
-        const picked = selectedRows().filter((item) => item.fileUrl);
-        if (!picked.length) return;
-        if (!window.JSZip) {
-          setLog("ZIP library did not load. Metadata exports still work.");
+      function saveLogin() {
+        clearError("login-error");
+        const name = document.getElementById("login-name").value.trim();
+        const site = document.getElementById("login-site").value.trim();
+        if (!name || !site) {
+          showError("login-error", "Name and site are required.");
           return;
         }
-
-        elements.originalsButton.disabled = true;
-        setLog(`Packaging ${picked.length} original files...`);
-        const zip = new JSZip();
-        const manifest = [];
-        const orphanReport = [];
-
-        for (const item of picked) {
-          try {
-            const response = await fetch(item.fileUrl);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const blob = await response.blob();
-            const filename = filenameFor(item);
-            zip.file(`originals/${filename}`, blob);
-            manifest.push({ ...item, exported_filename: `originals/${filename}`, exported: true });
-          } catch (error) {
-            orphanReport.push({ ...item, exported: false, reason: error.message });
-          }
-        }
-
-        const metadata = {
-          generated_at: new Date().toISOString(),
-          scope: "Coordinare Documents Manager standalone export",
-          selected_count: selectedRows().length,
-          attempted_original_count: picked.length,
-          exported_original_count: manifest.length,
-          failed_original_count: orphanReport.length,
-        };
-
-        zip.file("manifest.json", JSON.stringify(manifest, null, 2));
-        zip.file("manifest.csv", toCsv(manifest));
-        zip.file("orphan_report.json", JSON.stringify(orphanReport, null, 2));
-        zip.file("export_metadata.json", JSON.stringify(metadata, null, 2));
-
-        const content = await zip.generateAsync({ type: "blob" });
-        downloadBlob("coordinare-documents-manager-export.zip", content);
-        elements.originalsButton.disabled = false;
-        setLog(`ZIP complete: ${manifest.length} originals packaged, ${orphanReport.length} unavailable.`);
+        localStorage.setItem(LOGIN_KEY, JSON.stringify({ name, site, savedAt: new Date().toISOString() }));
+        closeModal("login-modal");
         render();
+        setLog(`Logged into local workspace as ${name}.`);
       }
 
-      function render() {
-        const rows = filteredDocuments();
-        const picked = selectedRows();
-        const readyCount = picked.filter((item) => item.fileUrl).length;
+      function resetLoginModal() {
+        clearError("login-error");
+        const login = getLogin();
+        document.getElementById("login-name").value = login?.name || "";
+        document.getElementById("login-site").value = login?.site || "";
+      }
 
-        elements.totalCount.textContent = documents.length;
-        elements.selectedCount.textContent = picked.length;
-        elements.readyCount.textContent = readyCount;
-        elements.missingCount.textContent = picked.length - readyCount;
-        elements.originalsButton.disabled = readyCount === 0;
-        elements.selectVisible.checked = rows.length > 0 && rows.every((item) => selected.has(item.id));
-
-        elements.rows.innerHTML = rows
-          .map(
-            (item) => `
-              <tr>
-                <td class="check-cell">
-                  <input aria-label="Select ${item.title}" data-select-id="${item.id}" type="checkbox" ${
-                    selected.has(item.id) ? "checked" : ""
-                  } />
-                </td>
-                <td>
-                  <div class="file-title">
-                    <i data-lucide="file-text"></i>
-                    <div>
-                      <strong>${item.title}</strong>
-                      <span>${item.type} &middot; ${item.size} &middot; ${item.uploaded}</span>
-                    </div>
-                  </div>
-                </td>
-                <td>${item.study}</td>
-                <td>${item.site}</td>
-                <td>${item.board}</td>
-                <td>${item.source}</td>
-                <td><span class="${item.fileUrl ? "status ready" : "status missing"}">${item.status}</span></td>
-                <td class="row-actions">
-                  <button class="icon-button" title="Download file" ${item.fileUrl ? "" : "disabled"}>
-                    <i data-lucide="download"></i>
-                  </button>
-                </td>
-              </tr>
-            `,
-          )
-          .join("");
-
-        document.querySelectorAll("[data-select-id]").forEach((input) => {
-          input.addEventListener("change", () => {
-            if (input.checked) selected.add(input.dataset.selectId);
-            else selected.delete(input.dataset.selectId);
+      function bindEvents() {
+        document.querySelectorAll(".nav-item").forEach((button) => {
+          button.addEventListener("click", () => {
+            activeView = button.dataset.view;
             render();
           });
         });
 
-        if (window.lucide) window.lucide.createIcons();
+        document.querySelectorAll("[data-close-modal]").forEach((button) => {
+          button.addEventListener("click", () => closeModal(button.dataset.closeModal));
+        });
+
+        document.querySelectorAll(".modal-overlay").forEach((overlay) => {
+          overlay.addEventListener("click", (event) => {
+            if (event.target === overlay) closeModal(overlay.id);
+          });
+        });
+
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") {
+            document.querySelectorAll(".modal-overlay.open").forEach((modal) => closeModal(modal.id));
+          }
+        });
+
+        els.loginButton.addEventListener("click", () => {
+          resetLoginModal();
+          openModal("login-modal");
+        });
+        els.coordinareLoginButton.addEventListener("click", () => window.open(COORDINARE_LOGIN_URL, "_blank", "noopener"));
+        els.openCoordinareLogin.addEventListener("click", () => window.open(COORDINARE_LOGIN_URL, "_blank", "noopener"));
+        document.getElementById("save-login").addEventListener("click", saveLogin);
+
+        document.getElementById("new-board-button").addEventListener("click", openBoardModal);
+        document.getElementById("sidebar-new-board").addEventListener("click", openBoardModal);
+        document.getElementById("save-board").addEventListener("click", saveBoardFromModal);
+
+        document.getElementById("new-document-button").addEventListener("click", () => openDocumentModal());
+        document.getElementById("empty-add-document").addEventListener("click", () => openDocumentModal());
+        document.getElementById("save-document").addEventListener("click", saveDocumentFromModal);
+
+        document.getElementById("new-task-button").addEventListener("click", openTaskModal);
+        document.getElementById("save-task").addEventListener("click", saveTaskFromModal);
+        document.getElementById("task-export-button").addEventListener("click", () => {
+          downloadFile("coordinare-task-board-export.csv", toCsv(taskRowsForExport()), "text/csv");
+          setLog("Task CSV exported.");
+        });
+
+        els.searchInput.addEventListener("input", () => {
+          filters.query = els.searchInput.value;
+          renderDocuments();
+          if (window.lucide) window.lucide.createIcons();
+        });
+        els.statusFilter.addEventListener("change", () => {
+          filters.status = els.statusFilter.value;
+          renderDocuments();
+          if (window.lucide) window.lucide.createIcons();
+        });
+        els.typeFilter.addEventListener("change", () => {
+          filters.type = els.typeFilter.value;
+          renderDocuments();
+          if (window.lucide) window.lucide.createIcons();
+        });
+        els.sourceFilter.addEventListener("change", () => {
+          filters.source = els.sourceFilter.value;
+          renderDocuments();
+          if (window.lucide) window.lucide.createIcons();
+        });
+        els.selectVisible.addEventListener("change", () => {
+          const visible = visibleDocuments().map((doc) => doc.id);
+          const next = selectedIds();
+          visible.forEach((docId) => {
+            if (els.selectVisible.checked) next.add(docId);
+            else next.delete(docId);
+          });
+          setSelectedIds(Array.from(next));
+          render();
+        });
+
+        document.getElementById("import-button").addEventListener("click", () => els.manifestInput.click());
+        els.manifestInput.addEventListener("change", () => {
+          if (els.manifestInput.files[0]) importManifest(els.manifestInput.files[0]);
+        });
+        document.getElementById("template-button").addEventListener("click", () => {
+          const rows = [
+            {
+              title: "PI CV signed.pdf",
+              study: "CO-204",
+              site: "Phoenix Research",
+              board: "CO-204 Regulatory",
+              source: "Document Manager",
+              owner: "Regulatory Lead",
+              type: "Credential",
+              expiration: "",
+              fileUrl: "",
+              notes: "Optional",
+            },
+          ];
+          downloadFile("coordinare-document-import-template.csv", toCsv(rows), "text/csv");
+          setLog("Import template downloaded.");
+        });
+        document.getElementById("demo-button").addEventListener("click", loadExample);
+
+        document.getElementById("csv-button").addEventListener("click", () => {
+          downloadFile("coordinare-document-manifest.csv", toCsv(documentRowsForExport()), "text/csv");
+          setLog("Document CSV exported.");
+        });
+        document.getElementById("json-button").addEventListener("click", () => {
+          downloadFile("coordinare-workspace-export.json", JSON.stringify({ ...workspace, export_metadata: exportMetadata() }, null, 2), "application/json");
+          setLog("Workspace JSON exported.");
+        });
+        document.getElementById("orphan-button").addEventListener("click", () => {
+          downloadFile("coordinare-orphan-report.json", JSON.stringify(orphanReport(), null, 2), "application/json");
+          setLog("Orphan report exported.");
+        });
+        document.getElementById("zip-button").addEventListener("click", exportZip);
       }
 
-      refreshFilters();
-
-      elements.query.addEventListener("input", (event) => {
-        state.query = event.target.value;
-        render();
-      });
-
-      elements.study.addEventListener("change", (event) => {
-        state.study = event.target.value;
-        render();
-      });
-
-      elements.site.addEventListener("change", (event) => {
-        state.site = event.target.value;
-        render();
-      });
-
-      elements.source.addEventListener("change", (event) => {
-        state.source = event.target.value;
-        render();
-      });
-
-      elements.selectVisible.addEventListener("change", (event) => {
-        filteredDocuments().forEach((item) => {
-          if (event.target.checked) selected.add(item.id);
-          else selected.delete(item.id);
-        });
-        render();
-      });
-
-      elements.csvButton.addEventListener("click", () => {
-        downloadFile("coordinare-documents-manager-manifest.csv", toCsv(selectedRows()), "text/csv");
-        setLog(`Downloaded CSV metadata for ${selectedRows().length} selected rows.`);
-      });
-
-      elements.jsonButton.addEventListener("click", () => {
-        const picked = selectedRows();
-        const payload = {
-          export_metadata: {
-            generated_at: new Date().toISOString(),
-            scope: "Coordinare Documents Manager read-only export",
-            selected_count: picked.length,
-            original_file_count: picked.filter((item) => item.fileUrl).length,
-          },
-          manifest: picked,
-        };
-        downloadFile("coordinare-documents-manager-manifest.json", JSON.stringify(payload, null, 2), "application/json");
-        setLog(`Downloaded JSON metadata for ${picked.length} selected rows.`);
-      });
-
-      elements.originalsButton.addEventListener("click", exportOriginalsZip);
-
-      elements.templateButton.addEventListener("click", () => {
-        downloadFile("coordinare-document-template.csv", toCsv([normalizeRow({ title: "example.pdf", study: "CO-101", site: "Phoenix", board: "Regulatory", source: "Document Manager", fileUrl: "https://example.com/file.pdf" }, 0)]), "text/csv");
-        setLog("Downloaded import template.");
-      });
-
-      elements.demoButton.addEventListener("click", () => {
-        documents = demoDocuments;
-        selected.clear();
-        documents.forEach((item) => selected.add(item.id));
-        localStorage.removeItem("coordinare.documents.manifest");
-        refreshFilters();
-        render();
-        setLog("Restored demo data.");
-      });
-
-      elements.manifestInput.addEventListener("change", async (event) => {
-        const [file] = event.target.files;
-        if (!file) return;
-        try {
-          await importManifest(file);
-        } catch (error) {
-          setLog(`Import failed: ${error.message}`);
-        } finally {
-          event.target.value = "";
-        }
-      });
-
+      bindEvents();
       render();
     </script>
   </body>

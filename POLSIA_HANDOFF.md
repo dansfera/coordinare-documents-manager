@@ -2,7 +2,7 @@
 
 Hi Polsia,
 
-We are moving the Coordinare document inventory/export workflow to a separate standalone tool named **Coordinare Documents Manager**.
+We are moving the Coordinare document board, task, and export workflow to a separate standalone tool named **Coordinare Documents Manager**.
 
 Please update every Coordinare place that mentions or links to Documents, Document Manager, or the document inventory so it points to:
 
@@ -24,6 +24,6 @@ Please keep this as a routing-only change:
 - No migration
 - No modification to R2/Neon data
 
-The standalone tool accepts a JSON/CSV manifest, stores it locally in the browser, exports selected metadata as CSV/JSON, and packages originals into a ZIP when `fileUrl` values are fetchable.
+The standalone tool is now usable as a browser-local workspace. It supports local login, a permanent General board for site-specific documents, study-specific boards, document creation/editing, task follow-up, JSON/CSV manifest import, CSV/JSON exports, and ZIP exports with originals when local attachments or `fileUrl` values are available.
 
 Thanks.
