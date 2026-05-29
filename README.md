@@ -2,6 +2,8 @@
 
 Standalone read-only document inventory and export tool for Coordinare.
 
+Hosted URL: https://documentmanager.coordinare.co/
+
 ## What It Does
 
 - Imports a JSON or CSV manifest from any source.
@@ -48,7 +50,7 @@ http://127.0.0.1:4173/
 
 ## Polsia Handoff
 
-Please link every Coordinare Documents / Document Manager entry point to the hosted Coordinare Documents Manager URL, including:
+Please link every Coordinare Documents / Document Manager entry point to `https://documentmanager.coordinare.co/`, including:
 
 - Homepage Documents button
 - Dashboard Documents button or card

@@ -4,7 +4,9 @@ Hi Polsia,
 
 We are moving the Coordinare document inventory/export workflow to a separate standalone tool named **Coordinare Documents Manager**.
 
-Please update every Coordinare place that mentions or links to Documents, Document Manager, or the document inventory so it points to the new hosted Coordinare Documents Manager URL once provided.
+Please update every Coordinare place that mentions or links to Documents, Document Manager, or the document inventory so it points to:
+
+https://documentmanager.coordinare.co/
 
 This includes:
 
