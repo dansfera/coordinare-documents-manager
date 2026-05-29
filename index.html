@@ -2417,13 +2417,8 @@
 
       function connectCtmsAuth() {
         clearError("login-error");
-        const popup = window.open(CTMS_AUTH_BRIDGE_URL, "coordinareCtmsLogin", "popup,width=520,height=760");
-        if (!popup) {
-          showError("login-error", "Popup blocked. Open the CTMS login page in a new tab instead.");
-          window.open(CTMS_AUTH_BRIDGE_URL, "_blank", "noopener");
-          return;
-        }
-        setLog("Waiting for CTMS login confirmation...");
+        setLog("Opening Coordinare CTMS login...");
+        window.location.assign(CTMS_AUTH_BRIDGE_URL);
       }
 
       function saveCtmsSession(payload) {
@@ -2437,6 +2432,23 @@
         if (event.origin !== CTMS_ORIGIN) return;
         if (!event.data || event.data.type !== "coordinare-ctms-auth" || !event.data.authenticated) return;
         saveCtmsSession(event.data);
+      }
+
+      function handleCtmsReturn() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("ctms") !== "connected") return;
+        if (!getLogin()) {
+          saveCtmsSession({
+            type: "coordinare-ctms-auth",
+            authenticated: true,
+            authenticatedAt: new Date().toISOString(),
+            user: { name: "CTMS user" },
+          });
+        }
+        params.delete("ctms");
+        const nextQuery = params.toString();
+        const cleanUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash}`;
+        window.history.replaceState({}, "", cleanUrl);
       }
 
       function resetLoginModal() {
@@ -2560,6 +2572,7 @@
         document.getElementById("zip-button").addEventListener("click", exportZip);
       }
 
+      handleCtmsReturn();
       bindEvents();
       render();
     </script>
