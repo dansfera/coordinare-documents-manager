@@ -1767,8 +1767,9 @@
         });
       }
 
-      function requireCtmsAuth() {
-        if (getLogin()) return true;
+      async function requireCtmsAuth() {
+        const session = await refreshCtmsSession();
+        if (session) return true;
         resetLoginModal();
         showError("login-error", "Login with CTMS before creating, importing, uploading, or exporting documents.");
         openModal("login-modal");
@@ -2034,7 +2035,11 @@
           .join("");
 
         document.querySelectorAll("[data-toggle-task]").forEach((input) => {
-          input.addEventListener("change", () => {
+          input.addEventListener("change", async () => {
+            if (!(await requireCtmsAuth())) {
+              render();
+              return;
+            }
             const task = workspace.tasks.find((item) => item.id === input.dataset.toggleTask);
             if (task) task.done = input.checked;
             saveWorkspace();
@@ -2044,7 +2049,8 @@
         });
 
         document.querySelectorAll("[data-delete-task]").forEach((button) => {
-          button.addEventListener("click", () => {
+          button.addEventListener("click", async () => {
+            if (!(await requireCtmsAuth())) return;
             const task = workspace.tasks.find((item) => item.id === button.dataset.deleteTask);
             if (!task || !window.confirm(`Delete "${task.title}"?`)) return;
             workspace.tasks = workspace.tasks.filter((item) => item.id !== button.dataset.deleteTask);
@@ -2098,8 +2104,8 @@
         return new Blob([bytes], { type: mime });
       }
 
-      function openDocumentModal(docId = "") {
-        if (!requireCtmsAuth()) return;
+      async function openDocumentModal(docId = "") {
+        if (!(await requireCtmsAuth())) return;
         clearError("document-error");
         const doc = workspace.documents.find((item) => item.id === docId);
         document.getElementById("document-modal-title").textContent = doc ? "Edit Document" : "Add Document";
@@ -2138,7 +2144,7 @@
       }
 
       async function saveDocumentFromModal() {
-        if (!requireCtmsAuth()) return;
+        if (!(await requireCtmsAuth())) return;
         clearError("document-error");
         const editId = document.getElementById("document-id-input").value;
         const title = document.getElementById("document-title-input").value.trim();
@@ -2216,8 +2222,8 @@
         });
       }
 
-      function deleteDocument(docId) {
-        if (!requireCtmsAuth()) return;
+      async function deleteDocument(docId) {
+        if (!(await requireCtmsAuth())) return;
         const doc = workspace.documents.find((item) => item.id === docId);
         if (!doc) return;
         if (!window.confirm(`Delete "${doc.title}"?`)) return;
@@ -2232,8 +2238,8 @@
         });
       }
 
-      function openBoardModal() {
-        if (!requireCtmsAuth()) return;
+      async function openBoardModal() {
+        if (!(await requireCtmsAuth())) return;
         clearError("board-error");
         document.getElementById("board-name-input").value = "";
         document.getElementById("board-scope-input").value = "study";
@@ -2243,8 +2249,8 @@
         openModal("board-modal");
       }
 
-      function saveBoardFromModal() {
-        if (!requireCtmsAuth()) return;
+      async function saveBoardFromModal() {
+        if (!(await requireCtmsAuth())) return;
         clearError("board-error");
         const name = document.getElementById("board-name-input").value.trim();
         const scope = document.getElementById("board-scope-input").value;
@@ -2283,8 +2289,8 @@
         });
       }
 
-      function openTaskModal() {
-        if (!requireCtmsAuth()) return;
+      async function openTaskModal() {
+        if (!(await requireCtmsAuth())) return;
         clearError("task-error");
         document.getElementById("task-title-input").value = "";
         fillBoardSelect(document.getElementById("task-board-input"), workspace.activeBoardId);
@@ -2294,8 +2300,8 @@
         openModal("task-modal");
       }
 
-      function saveTaskFromModal() {
-        if (!requireCtmsAuth()) return;
+      async function saveTaskFromModal() {
+        if (!(await requireCtmsAuth())) return;
         clearError("task-error");
         const title = document.getElementById("task-title-input").value.trim();
         if (!title) {
@@ -2405,7 +2411,7 @@
       }
 
       async function exportZip() {
-        if (!requireCtmsAuth()) return;
+        if (!(await requireCtmsAuth())) return;
         const selected = selectedRows();
         if (!selected.length) {
           setLog("Select at least one document before creating a ZIP export.");
@@ -2554,7 +2560,7 @@
       }
 
       async function importManifest(file) {
-        if (!requireCtmsAuth()) return;
+        if (!(await requireCtmsAuth())) return;
         try {
           const text = await file.text();
           const rows = parseManifest(text, file.name).map(normalizeImportRow);
@@ -2578,8 +2584,8 @@
         }
       }
 
-      function loadExample() {
-        if (!requireCtmsAuth()) return;
+      async function loadExample() {
+        if (!(await requireCtmsAuth())) return;
         const hasUserData = workspace.documents.length || workspace.tasks.length || workspace.boards.length > 1;
         if (hasUserData && !window.confirm("Replace the current local workspace with example data?")) return;
         workspace = structuredClone(exampleWorkspace);
@@ -2686,8 +2692,8 @@
 
         document.getElementById("new-task-button").addEventListener("click", openTaskModal);
         document.getElementById("save-task").addEventListener("click", saveTaskFromModal);
-        document.getElementById("task-export-button").addEventListener("click", () => {
-          if (!requireCtmsAuth()) return;
+        document.getElementById("task-export-button").addEventListener("click", async () => {
+          if (!(await requireCtmsAuth())) return;
           downloadFile("coordinare-task-board-export.csv", toCsv(taskRowsForExport()), "text/csv");
           setLog("Task CSV exported.");
           trackUsage("export.tasks_csv", { exportType: "tasks_csv", taskCount: workspace.tasks.length });
@@ -2725,15 +2731,15 @@
         });
 
         document.getElementById("import-button").addEventListener("click", () => els.manifestInput.click());
-        els.manifestInput.addEventListener("change", () => {
-          if (!requireCtmsAuth()) {
+        els.manifestInput.addEventListener("change", async () => {
+          if (!(await requireCtmsAuth())) {
             els.manifestInput.value = "";
             return;
           }
           if (els.manifestInput.files[0]) importManifest(els.manifestInput.files[0]);
         });
-        document.getElementById("template-button").addEventListener("click", () => {
-          if (!requireCtmsAuth()) return;
+        document.getElementById("template-button").addEventListener("click", async () => {
+          if (!(await requireCtmsAuth())) return;
           const rows = [
             {
               title: "PI CV signed.pdf",
@@ -2754,20 +2760,20 @@
         });
         document.getElementById("demo-button").addEventListener("click", loadExample);
 
-        document.getElementById("csv-button").addEventListener("click", () => {
-          if (!requireCtmsAuth()) return;
+        document.getElementById("csv-button").addEventListener("click", async () => {
+          if (!(await requireCtmsAuth())) return;
           downloadFile("coordinare-document-manifest.csv", toCsv(documentRowsForExport()), "text/csv");
           setLog("Document CSV exported.");
           trackUsage("export.csv", { exportType: "manifest_csv", documentCount: workspace.documents.length });
         });
-        document.getElementById("json-button").addEventListener("click", () => {
-          if (!requireCtmsAuth()) return;
+        document.getElementById("json-button").addEventListener("click", async () => {
+          if (!(await requireCtmsAuth())) return;
           downloadFile("coordinare-workspace-export.json", JSON.stringify({ ...workspace, export_metadata: exportMetadata() }, null, 2), "application/json");
           setLog("Workspace JSON exported.");
           trackUsage("export.json", { exportType: "workspace_json" });
         });
-        document.getElementById("orphan-button").addEventListener("click", () => {
-          if (!requireCtmsAuth()) return;
+        document.getElementById("orphan-button").addEventListener("click", async () => {
+          if (!(await requireCtmsAuth())) return;
           downloadFile("coordinare-orphan-report.json", JSON.stringify(orphanReport(), null, 2), "application/json");
           setLog("Orphan report exported.");
           trackUsage("export.orphan_report", { exportType: "orphan_report" });
