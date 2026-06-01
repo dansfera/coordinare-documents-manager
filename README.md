@@ -6,7 +6,7 @@ Hosted URL: https://documentmanager.coordinare.co/
 
 ## What It Does
 
-- Uses the Coordinare CTMS login flow through a CTMS auth bridge.
+- Uses the Coordinare SSO login flow, with a verified CTMS session fallback during the transition.
 - Creates a permanent General board for site-specific, non-study-specific documents.
 - Creates study-specific boards with study/site metadata.
 - Adds, edits, opens, and deletes documents with expiration dates, owners, notes, local attachments, or file URLs.
@@ -18,7 +18,7 @@ Hosted URL: https://documentmanager.coordinare.co/
 
 ## Why It Is Separate
 
-This is intentionally independent from Polsia production internals. It connects to the Coordinare CTMS auth flow for login, then stores document boards locally in the browser until a CTMS backend sync is added. Polsia only needs to link to the hosted tool anywhere the app currently mentions or links to Documents or Document Manager.
+This is intentionally independent from Polsia production internals. It verifies a real Coordinare account session before enabling document work, then stores document boards locally in the browser until a backend sync is added. A verified CTMS session remains accepted as a transition fallback. Polsia only needs to link to the hosted tool anywhere the app currently mentions or links to Documents or Document Manager.
 
 ## Manifest Fields
 

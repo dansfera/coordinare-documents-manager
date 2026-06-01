@@ -950,11 +950,11 @@
         </div>
 
         <section class="workspace-card" aria-label="Workspace">
-          <span>CTMS session</span>
+          <span>Coordinare session</span>
           <strong id="workspace-name">Not connected</strong>
           <button class="button ghost" id="login-button" type="button">
             <i data-lucide="log-in"></i>
-            <span>Login with CTMS</span>
+            <span>Login with Coordinare</span>
           </button>
         </section>
 
@@ -1222,28 +1222,27 @@
           </div>
         </section>
 
-        <div class="log" id="log" role="status">Ready. Login uses the Coordinare CTMS auth flow.</div>
+        <div class="log" id="log" role="status">Ready. Login uses your verified Coordinare account.</div>
       </section>
     </main>
 
     <div class="modal-overlay" id="login-modal">
       <section class="modal small" role="dialog" aria-modal="true" aria-labelledby="login-title">
         <header class="modal-header">
-          <h2 id="login-title">Login with Coordinare CTMS</h2>
+          <h2 id="login-title">Login with Coordinare</h2>
           <button class="icon-button" data-close-modal="login-modal" title="Close" type="button">
             <i data-lucide="x"></i>
           </button>
         </header>
         <div class="modal-body">
           <p class="subtitle">
-            Documents Manager uses the same CTMS login you use for Coordinare: Google sign-in,
-            magic link, and one-time code fallback. Sign in opens the CTMS auth page, confirms your
-            session there, then returns you here.
+            Documents Manager uses the same Coordinare login as the rest of the tool suite. Sign in
+            once with your Coordinare account, then return here to manage boards, tasks, and exports.
           </p>
           <div class="error" id="login-error"></div>
           <div class="onboarding-card lead">
             <strong>Coordinare CTMS</strong>
-            <span>Use Google or email magic link on the CTMS login page. No password or fake local account is created here.</span>
+            <span>Use your Coordinare account. No fake local account is created in this standalone tool.</span>
           </div>
         </div>
         <footer class="modal-footer">
@@ -1413,12 +1412,14 @@
 
     <script>
       const STORAGE_KEY = "coordinare.documents.workspace.v2";
-      const LOGIN_KEY = "coordinare.documents.ctmsSession";
+      const LOGIN_KEY = "coordinare.documents.coordinareSession";
       const TELEMETRY_SESSION_KEY = "coordinare.documents.telemetrySession";
+      const COORDINARE_ORIGIN = "https://coordinare.co";
+      const COORDINARE_AUTH_BRIDGE_URL = `${COORDINARE_ORIGIN}/api/sso/authorize?app=document-manager&returnTo=${encodeURIComponent(`${window.location.origin}${window.location.pathname}`)}`;
+      const COORDINARE_SESSION_URL = `${COORDINARE_ORIGIN}/api/sso/session`;
       const CTMS_ORIGIN = "https://ctms.coordinare.co";
-      const CTMS_AUTH_BRIDGE_URL = `${CTMS_ORIGIN}/auth/document-manager`;
       const CTMS_SESSION_URL = `${CTMS_ORIGIN}/api/document-manager/session`;
-      const CTMS_TELEMETRY_URL = `${CTMS_ORIGIN}/api/document-manager/events`;
+      const DOCUMENT_TELEMETRY_URL = "";
 
       const defaultWorkspace = {
         boards: [
@@ -1619,8 +1620,9 @@
 
       function trackUsage(eventType, payload = {}) {
         if (!getLogin()) return;
+        if (!DOCUMENT_TELEMETRY_URL) return;
         try {
-          fetch(CTMS_TELEMETRY_URL, {
+          fetch(DOCUMENT_TELEMETRY_URL, {
             method: "POST",
             mode: "cors",
             credentials: "include",
@@ -1724,10 +1726,10 @@
 
       function updateWorkspaceName() {
         const login = getLogin();
-        els.workspaceName.textContent = login ? login.label : authChecked ? "Not connected" : "Checking CTMS...";
+        els.workspaceName.textContent = login ? login.label : authChecked ? "Not connected" : "Checking Coordinare...";
         els.loginButton.innerHTML = login
-          ? '<i data-lucide="user-check"></i><span>CTMS Connected</span>'
-          : '<i data-lucide="log-in"></i><span>Login with CTMS</span>';
+          ? '<i data-lucide="user-check"></i><span>Coordinare Connected</span>'
+          : '<i data-lucide="log-in"></i><span>Login with Coordinare</span>';
       }
 
       function getLogin() {
@@ -1763,7 +1765,7 @@
         const disabled = !getLogin();
         authRequiredControls().forEach((control) => {
           control.disabled = disabled;
-          control.title = disabled ? "Login with CTMS to use Documents Manager" : "";
+          control.title = disabled ? "Login with Coordinare to use Documents Manager" : "";
         });
       }
 
@@ -1771,28 +1773,22 @@
         const session = await refreshCtmsSession();
         if (session) return true;
         resetLoginModal();
-        showError("login-error", "Login with CTMS before creating, importing, uploading, or exporting documents.");
+        showError("login-error", "Login with Coordinare before creating, importing, uploading, or exporting documents.");
         openModal("login-modal");
-        setLog("Login with CTMS is required before using Documents Manager.");
+        setLog("Login with Coordinare is required before using Documents Manager.");
         return false;
       }
 
       async function refreshCtmsSession(options = {}) {
         try {
-          const response = await fetch(CTMS_SESSION_URL, {
-            method: "GET",
-            mode: "cors",
-            credentials: "include",
-            cache: "no-store",
-          });
-          if (!response.ok) throw new Error("Not authenticated");
-          const data = await response.json();
-          if (!data.authenticated) throw new Error("Not authenticated");
+          let data = await fetchVerifiedSession(COORDINARE_SESSION_URL);
+          if (!data) data = await fetchVerifiedSession(CTMS_SESSION_URL);
+          if (!data?.authenticated) throw new Error("Not authenticated");
           ctmsSession = data;
           localStorage.setItem(LOGIN_KEY, JSON.stringify(data));
           authChecked = true;
           render();
-          if (options.showLog) setLog(`Connected to CTMS as ${data.user?.email || data.user?.name || "authenticated user"}.`);
+          if (options.showLog) setLog(`Connected to Coordinare as ${data.user?.email || data.user?.name || "authenticated user"}.`);
           if (options.trackOpen) trackUsage("app.opened", { view: activeView });
           return data;
         } catch {
@@ -1800,7 +1796,23 @@
           localStorage.removeItem(LOGIN_KEY);
           authChecked = true;
           render();
-          if (options.showLog) setLog("CTMS login is required before using Documents Manager.");
+          if (options.showLog) setLog("Coordinare login is required before using Documents Manager.");
+          return null;
+        }
+      }
+
+      async function fetchVerifiedSession(url) {
+        try {
+          const response = await fetch(url, {
+            method: "GET",
+            mode: "cors",
+            credentials: "include",
+            cache: "no-store",
+          });
+          if (!response.ok) return null;
+          const data = await response.json();
+          return data?.authenticated ? data : null;
+        } catch {
           return null;
         }
       }
@@ -2598,40 +2610,41 @@
 
       function connectCtmsAuth() {
         clearError("login-error");
-        setLog("Opening Coordinare CTMS login...");
-        window.location.assign(CTMS_AUTH_BRIDGE_URL);
+        setLog("Opening Coordinare login...");
+        window.location.assign(COORDINARE_AUTH_BRIDGE_URL);
       }
 
-      // Display-only CTMS session marker. This local-only app has no backend
+      // Display-only Coordinare session marker. This local-only app has no backend
       // session and this value must never be used as access control. Any future
-      // backend sync must re-authenticate the user against CTMS server-side.
+      // backend sync must re-authenticate the user against Coordinare server-side.
       function saveCtmsSession(payload) {
         localStorage.setItem(LOGIN_KEY, JSON.stringify(payload));
         closeModal("login-modal");
         render();
-        setLog(`Connected to CTMS as ${payload.user?.email || payload.user?.name || "authenticated user"}.`);
-        trackUsage("auth.connected", { method: "ctms" });
+        setLog(`Connected to Coordinare as ${payload.user?.email || payload.user?.name || "authenticated user"}.`);
+        trackUsage("auth.connected", { method: "coordinare" });
       }
 
       function handleAuthMessage(event) {
-        if (event.origin !== CTMS_ORIGIN) return;
-        if (!event.data || event.data.type !== "coordinare-ctms-auth" || !event.data.authenticated) return;
+        if (event.origin !== COORDINARE_ORIGIN) return;
+        if (!event.data || event.data.type !== "coordinare-sso-auth" || !event.data.authenticated) return;
         refreshCtmsSession({ showLog: true, trackOpen: true });
       }
 
-      // Display-only return flag. Anyone can forge ?ctms=connected locally, so
-      // this must only change the UI label. Never trust it for backend access;
-      // future server sync must validate the CTMS session server-side.
+      // Display-only return flag. Anyone can forge ?sso=connected locally, so
+      // this must only trigger a real session refresh. Never trust it for access.
       async function handleCtmsReturn() {
         const params = new URLSearchParams(window.location.search);
-        if (params.get("ctms") !== "connected") return;
+        const hasReturnFlag = params.get("sso") === "connected" || params.get("ctms") === "connected";
+        if (!hasReturnFlag) return;
+        params.delete("sso");
         params.delete("ctms");
         const nextQuery = params.toString();
         const cleanUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash}`;
         window.history.replaceState({}, "", cleanUrl);
         const session = await refreshCtmsSession({ showLog: true, trackOpen: true });
         if (!session) {
-          showError("login-error", "CTMS could not verify your login. Please sign in again.");
+          showError("login-error", "Coordinare could not verify your login. Please sign in again.");
           openModal("login-modal");
         }
       }
@@ -2781,7 +2794,7 @@
         document.getElementById("zip-button").addEventListener("click", exportZip);
       }
 
-      const hasCtmsReturn = new URLSearchParams(window.location.search).get("ctms") === "connected";
+      const hasCtmsReturn = new URLSearchParams(window.location.search).get("sso") === "connected";
       handleCtmsReturn();
       bindEvents();
       render();
