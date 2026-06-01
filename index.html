@@ -984,7 +984,7 @@
         </section>
 
         <div class="side-note">
-          Login is required through Coordinare CTMS before document work starts. Documents Manager
+          Login is required through Coordinare before document work starts. Documents Manager
           keeps boards, tasks, attachments, and exports in this browser until backend sync is added.
         </div>
       </aside>
@@ -1005,7 +1005,7 @@
             </a>
             <button class="button secondary" id="coordinare-login-button" type="button">
               <i data-lucide="external-link"></i>
-              <span>CTMS Login</span>
+              <span>Coordinare Login</span>
             </button>
             <button class="button secondary" id="new-board-button" type="button">
               <i data-lucide="layout-dashboard"></i>
@@ -1241,14 +1241,14 @@
           </p>
           <div class="error" id="login-error"></div>
           <div class="onboarding-card lead">
-            <strong>Coordinare CTMS</strong>
+            <strong>Coordinare Login</strong>
             <span>Use your Coordinare account. No fake local account is created in this standalone tool.</span>
           </div>
         </div>
         <footer class="modal-footer">
           <button class="button primary" id="open-coordinare-login" type="button">
             <i data-lucide="external-link"></i>
-            <span>Continue with CTMS</span>
+            <span>Continue with Coordinare</span>
           </button>
         </footer>
       </section>
@@ -1737,7 +1737,7 @@
         const user = ctmsSession.user || {};
         return {
           ...ctmsSession,
-          label: user.name || user.email || "CTMS user",
+          label: user.name || user.email || "Coordinare user",
         };
       }
 
