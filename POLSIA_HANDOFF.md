@@ -30,6 +30,11 @@ The standalone tool now requires a verified Coordinare account session before us
 
 The current standalone Documents Manager has no backend document store of its own. Coordinare authentication is verified by calling `https://coordinare.co/api/sso/session` with browser credentials; CTMS authentication is also verified through `https://ctms.coordinare.co/api/document-manager/session` as a transition fallback. Unauthenticated browsers receive a failed session check and all mutating document controls remain disabled. The `?sso=connected` / `?ctms=connected` URL flags and localStorage session markers are display-only client-side markers and must never be treated as access control. Any future backend sync must re-authenticate against Coordinare or CTMS server-side and must not trust URL flags or localStorage markers.
 
-Authenticated usage events are sent to `https://ctms.coordinare.co/api/document-manager/events` and summarized for the DSCS admin at `/admin/documents`. These events contain product usage counts and event metadata only; they do not upload document files or turn browser-local document records into the regulated source of truth.
+The Documents Manager contains privacy-minimal usage event hooks, but delivery is
+currently disabled because Coordinare SSO does not authenticate the separate
+CTMS event collector. Do not enable the collector until the server-to-server
+identity bridge is implemented. Event payloads intentionally exclude document
+titles, board names, task titles, study/site identifiers, filenames, document
+contents, and PHI.
 
 Thanks.

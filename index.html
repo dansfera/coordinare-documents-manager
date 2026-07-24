@@ -1419,6 +1419,8 @@
       const COORDINARE_SESSION_URL = `${COORDINARE_ORIGIN}/api/sso/session`;
       const CTMS_ORIGIN = "https://ctms.coordinare.co";
       const CTMS_SESSION_URL = `${CTMS_ORIGIN}/api/document-manager/session`;
+      // Keep disabled until Coordinare SSO can authenticate the CTMS collector.
+      // Do not point this at an unauthenticated third-party analytics endpoint.
       const DOCUMENT_TELEMETRY_URL = "";
 
       const defaultWorkspace = {
@@ -2145,7 +2147,7 @@
         activeView = "documents";
         render();
         setLog(`Showing ${board.name}.`);
-        trackUsage("board.opened", { boardName: board.name, boardScope: board.scope });
+        trackUsage("board.opened", { boardScope: board.scope });
       }
 
       function fillBoardSelect(select, selectedBoardId) {
@@ -2216,8 +2218,6 @@
         render();
         setLog(existing ? "Document updated." : "Document added.");
         trackUsage(existing ? "document.updated" : "document.created", {
-          documentTitle: title,
-          boardName: boardById(boardId).name,
           documentType: next.type,
           source: next.source,
           hasFile: Boolean(next.fileData),
@@ -2244,10 +2244,7 @@
         saveWorkspace();
         render();
         setLog("Document deleted.");
-        trackUsage("document.deleted", {
-          documentTitle: doc.title,
-          boardName: boardById(doc.boardId).name,
-        });
+        trackUsage("document.deleted");
       }
 
       async function openBoardModal() {
@@ -2294,10 +2291,7 @@
         render();
         setLog(`Board "${board.name}" created.`);
         trackUsage("board.created", {
-          boardName: board.name,
           boardScope: board.scope,
-          studyId: board.study,
-          site: board.site,
         });
       }
 
@@ -2335,10 +2329,7 @@
         activeView = "tasks";
         render();
         setLog("Task created.");
-        trackUsage("task.created", {
-          taskTitle: title,
-          boardName: boardById(document.getElementById("task-board-input").value).name,
-        });
+        trackUsage("task.created");
       }
 
       function documentRowsForExport(rows = selectedRows()) {
@@ -2586,7 +2577,6 @@
           render();
           setLog(`Imported ${deduped.length} document${deduped.length === 1 ? "" : "s"} from ${file.name}.`);
           trackUsage("import.completed", {
-            fileName: file.name,
             importedDocuments: deduped.length,
           });
         } catch (error) {
